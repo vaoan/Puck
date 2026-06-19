@@ -1,0 +1,20 @@
+# Minimal Supabase local-dev config for Puck.
+# Run `supabase start` to bring up Postgres (with pgmq + pg_cron), Auth, etc.
+project_id = "puck"
+
+[db]
+port = 54322
+major_version = 17
+
+[api]
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public"]
+
+[studio]
+port = 54323
+
+[auth]
+# Social-login only, mirroring the sister projects. Configure providers
+# (Google, Discord) via env before enabling in production.
+enable_signup = true

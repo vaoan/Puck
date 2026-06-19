@@ -1,0 +1,64 @@
+{
+  "name": "puck",
+  "version": "2026.06.19.1",
+  "private": true,
+  "description": "Puck — a fast, lightweight event-following and notification platform.",
+  "type": "module",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:tools": "syncpack lint && cspell \"**/*.{ts,md,json}\" --no-progress",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:diff": "supabase db diff",
+    "db:types": "supabase gen types typescript --local > packages/db/src/database.types.ts",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/eslint-plugin": "^1.6.16",
+    "cspell": "^10.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-security": "^4.0.0",
+    "eslint-plugin-sonarjs": "^4.0.3",
+    "eslint-plugin-unicorn": "^64.0.0",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.3",
+    "secretlint": "^12.3.1",
+    "@secretlint/secretlint-rule-preset-recommend": "^12.3.1",
+    "supabase": "^2.0.0",
+    "syncpack": "^14.3.1",
+    "tsx": "^4.20.0",
+    "turbo": "^2.9.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.0",
+    "vitest": "^4.1.5"
+  },
+  "lint-staged": {
+    "*.{ts,js,mjs}": [
+      "prettier --check",
+      "eslint --max-warnings=0",
+      "secretlint"
+    ],
+    "*.{json,md}": [
+      "prettier --check"
+    ]
+  }
+}

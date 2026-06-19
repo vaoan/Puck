@@ -1,0 +1,29 @@
+{
+  "name": "@puck/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@fastify/helmet": "^13.0.0",
+    "@fastify/rate-limit": "^10.2.0",
+    "@puck/channels": "workspace:*",
+    "@puck/config": "workspace:*",
+    "@puck/core": "workspace:*",
+    "@puck/db": "workspace:*",
+    "@puck/queue": "workspace:*",
+    "fastify": "^5.2.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.0"
+  }
+}

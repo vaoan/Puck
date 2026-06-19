@@ -1,0 +1,13 @@
+ls:
+  .ts: kebab-case | PascalCase
+  .js: kebab-case
+  .mjs: kebab-case
+
+ignore:
+  - node_modules
+  - dist
+  - coverage
+  - .turbo
+  - .git
+  - supabase/migrations
+  - packages/db/src/database.types.ts

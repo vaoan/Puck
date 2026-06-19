@@ -1,0 +1,41 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "Puck",
+    "puck",
+    "supabase",
+    "pgmq",
+    "pnpm",
+    "turbo",
+    "monorepo",
+    "grammy",
+    "grammY",
+    "fastify",
+    "resend",
+    "nodemailer",
+    "vitest",
+    "tsup",
+    "tsconfig",
+    "noreply",
+    "webhook",
+    "webhooks",
+    "checkin",
+    "dedup",
+    "idempotency",
+    "idempotent",
+    "outbox",
+    "upsert",
+    "jsonb",
+    "uuid",
+    "Uranus"
+  ],
+  "ignorePaths": [
+    "node_modules/**",
+    "dist/**",
+    "coverage/**",
+    "pnpm-lock.yaml",
+    "packages/db/src/database.types.ts",
+    "supabase/migrations/**"
+  ]
+}
