@@ -14,12 +14,12 @@ status changes. See `README.md` for the architecture overview.
 ## References
 
 **Sister projects: `Z:\Github\candystore` and `Z:\Github\Janus`.** Puck shares
-their *toolchain and conventions* — pnpm + Turbo monorepo, strict TypeScript,
+their _toolchain and conventions_ — pnpm + Turbo monorepo, strict TypeScript,
 ESLint (flat config) + Prettier, Vitest, Husky, secretlint/cspell, the
 `.env` + `.secrets` discipline, kebab-case filenames, and CI/CD style. Consult
 them for tooling decisions and follow the same approach unless noted below.
 
-**Puck deliberately diverges from the sisters in *runtime architecture*:** it is
+**Puck deliberately diverges from the sisters in _runtime architecture_:** it is
 a backend service (Fastify API + Node worker + Supabase), not a Next.js
 frontend. Do **not** copy in Next.js/React/shadcn/Orval setup.
 

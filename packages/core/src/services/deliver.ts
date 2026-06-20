@@ -1,4 +1,3 @@
-import type { ChannelKey } from "../domain/channels.js";
 import type { ChannelRegistry } from "../ports/notification-channel.js";
 import type {
   EventChangeRepository,
@@ -58,7 +57,7 @@ export async function deliverNotification(
   }
 
   const message = renderEventChange(event, change);
-  const channel = deps.registry.require(subscription.channel as ChannelKey);
+  const channel = deps.registry.require(subscription.channel);
   const attempt = notification.attempts + 1;
 
   const result = await channel.send(message, {

@@ -23,6 +23,7 @@
 ## File Structure
 
 **Migrations (replace the scaffold's notification-era `0001_init.sql`):**
+
 - `supabase/migrations/0001_extensions_and_helpers.sql` — `pgcrypto`, `set_updated_at()`
 - `supabase/migrations/0002_user_profiles.sql` — profiles + `auth.users` sync trigger
 - `supabase/migrations/0003_permissions_core.sql` — `permissions`, `user_permissions`, `has_global_permission()`, seed 28 keys
@@ -37,18 +38,21 @@
 - `supabase/migrations/0012_audit.sql` — audit schema, tracking on all tables, immutability, scoped read
 
 **Test harness & tests:**
+
 - `vitest.config.integration.ts` — integration runner config
 - `tests/db/global-setup.ts` — load local Supabase env
 - `tests/db/helpers.ts` — `admin`, `createUser`, `userClient`, `grantGlobal`, `makeEvent`, `makeSession`
 - `tests/db/*.test.ts` — one file per concern (profiles, permissions, domain, delegation, rls-matrix, rpcs, cascade, audit)
 
 **Auth package:**
+
 - `packages/auth/package.json`, `tsconfig.json`
 - `packages/auth/src/permissions.ts` — `matchesPermissions()`, key constants
 - `packages/auth/src/permissions.test.ts`
 - `packages/auth/src/index.ts`
 
 **Touched:**
+
 - `package.json` — add `test:db` script; `packages/db/src/database.types.ts` — regen; `CLAUDE.md` — getting-started.
 
 ---
@@ -56,22 +60,26 @@
 ## Task 1: Local Supabase + DB integration test harness
 
 **Files:**
+
 - Delete: `supabase/migrations/0001_init.sql` (notification-era schema; superseded — pgmq/subscriptions return in sub-project #3)
 - Create: `vitest.config.integration.ts`, `tests/db/global-setup.ts`, `tests/db/helpers.ts`, `tests/db/smoke.test.ts`
 - Modify: `package.json` (scripts), `.gitignore` (add `.env.test`)
 
 **Interfaces:**
+
 - Produces: `admin: SupabaseClient`; `createUser(): Promise<{id,email,password}>`; `userClient(email,password): Promise<SupabaseClient>`; `grantGlobal(userId, key): Promise<void>`; `makeEvent(ownerClient, overrides?): Promise<{id}>`; `makeSession(ownerClient, eventId, overrides?): Promise<{id}>`.
 
 - [ ] **Step 1: Install deps and confirm tooling**
 
 Run:
+
 ```bash
 cd /z/Github/Puck
 pnpm install
 pnpm add -Dw @supabase/supabase-js
 supabase --version    # install the Supabase CLI if missing
 ```
+
 Expected: `pnpm-lock.yaml` created; supabase CLI prints a version.
 
 - [ ] **Step 2: Remove the superseded migration and add scripts**
@@ -79,15 +87,19 @@ Expected: `pnpm-lock.yaml` created; supabase CLI prints a version.
 ```bash
 git rm supabase/migrations/0001_init.sql
 ```
+
 Add to root `package.json` `"scripts"`:
+
 ```json
 "test:db": "supabase db reset && vitest run -c vitest.config.integration.ts"
 ```
+
 Append `.env.test` to `.gitignore`.
 
 - [ ] **Step 3: Write the integration config + env global-setup**
 
 `vitest.config.integration.ts`:
+
 ```ts
 import { defineConfig } from "vitest/config";
 
@@ -103,6 +115,7 @@ export default defineConfig({
 ```
 
 `tests/db/global-setup.ts`:
+
 ```ts
 import { execSync } from "node:child_process";
 
@@ -118,6 +131,7 @@ export default function setup(): void {
 - [ ] **Step 4: Write the harness helpers**
 
 `tests/db/helpers.ts`:
+
 ```ts
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
@@ -129,18 +143,27 @@ export const admin = (): SupabaseClient =>
   createClient(url(), service(), { auth: { persistSession: false } });
 
 let seq = 0;
-export async function createUser(): Promise<{ id: string; email: string; password: string }> {
+export async function createUser(): Promise<{
+  id: string;
+  email: string;
+  password: string;
+}> {
   seq += 1;
   const email = `u${Date.now()}_${seq}@test.puck`;
   const password = "Test-pass-123!";
   const { data, error } = await admin().auth.admin.createUser({
-    email, password, email_confirm: true,
+    email,
+    password,
+    email_confirm: true,
   });
   if (error) throw error;
   return { id: data.user.id, email, password };
 }
 
-export async function userClient(email: string, password: string): Promise<SupabaseClient> {
+export async function userClient(
+  email: string,
+  password: string,
+): Promise<SupabaseClient> {
   const c = createClient(url(), anon(), { auth: { persistSession: false } });
   const { error } = await c.auth.signInWithPassword({ email, password });
   if (error) throw error;
@@ -149,32 +172,44 @@ export async function userClient(email: string, password: string): Promise<Supab
 
 export async function grantGlobal(userId: string, key: string): Promise<void> {
   const a = admin();
-  const { data: perm, error } = await a.from("permissions").select("id").eq("key", key).single();
+  const { data: perm, error } = await a
+    .from("permissions")
+    .select("id")
+    .eq("key", key)
+    .single();
   if (error) throw error;
   const { error: insErr } = await a.from("user_permissions").insert({
-    user_id: userId, permission_id: perm.id, mode: "grant", granted_by: userId,
+    user_id: userId,
+    permission_id: perm.id,
+    mode: "grant",
+    granted_by: userId,
   });
   if (insErr) throw insErr;
 }
 
 export async function makeEvent(
-  owner: SupabaseClient, overrides: Record<string, unknown> = {},
+  owner: SupabaseClient,
+  overrides: Record<string, unknown> = {},
 ): Promise<{ id: string }> {
   const { data, error } = await owner
     .from("events")
     .insert({ title: "Test Event", timezone: "UTC", ...overrides })
-    .select("id").single();
+    .select("id")
+    .single();
   if (error) throw error;
   return { id: data.id as string };
 }
 
 export async function makeSession(
-  client: SupabaseClient, eventId: string, overrides: Record<string, unknown> = {},
+  client: SupabaseClient,
+  eventId: string,
+  overrides: Record<string, unknown> = {},
 ): Promise<{ id: string }> {
   const { data, error } = await client
     .from("sessions")
     .insert({ event_id: eventId, title: "Test Session", ...overrides })
-    .select("id").single();
+    .select("id")
+    .single();
   if (error) throw error;
   return { id: data.id as string };
 }
@@ -183,6 +218,7 @@ export async function makeSession(
 - [ ] **Step 5: Write the smoke test (fails until stack is up)**
 
 `tests/db/smoke.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 import { admin } from "./helpers.js";
@@ -199,10 +235,12 @@ describe("local supabase", () => {
 - [ ] **Step 6: Bring up the stack and run**
 
 Run:
+
 ```bash
 supabase start
 pnpm test:db
 ```
+
 Expected: smoke test PASSES (connects). It's fine that `user_profiles` doesn't exist yet — the assertion only checks connectivity.
 
 - [ ] **Step 7: Commit**
@@ -217,15 +255,18 @@ git commit -m "test: add local supabase db-integration harness; retire notificat
 ## Task 2: Extensions + shared `set_updated_at()` helper
 
 **Files:**
+
 - Create: `supabase/migrations/0001_extensions_and_helpers.sql`
 - Test: `tests/db/helpers-fn.test.ts`
 
 **Interfaces:**
+
 - Produces: trigger function `public.set_updated_at()` for reuse by every table's `updated_at`.
 
 - [ ] **Step 1: Write the failing test**
 
 `tests/db/helpers-fn.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 import { admin } from "./helpers.js";
@@ -247,6 +288,7 @@ Expected: FAIL (`set_updated_at_probe` does not exist).
 - [ ] **Step 3: Write the migration**
 
 `supabase/migrations/0001_extensions_and_helpers.sql`:
+
 ```sql
 create extension if not exists pgcrypto;
 
@@ -286,15 +328,18 @@ git commit -m "feat(db): extensions + set_updated_at helper"
 Adapted from `candystore/supabase/migrations/20260325600000_user_profiles.sql`.
 
 **Files:**
+
 - Create: `supabase/migrations/0002_user_profiles.sql`
 - Test: `tests/db/profiles.test.ts`
 
 **Interfaces:**
+
 - Produces: table `public.user_profiles(id, email, provider, display_name, avatar_url, first_seen_at, last_seen_at, created_at, updated_at)`; trigger syncing from `auth.users`.
 
 - [ ] **Step 1: Write the failing test**
 
 `tests/db/profiles.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 import { admin, createUser, userClient } from "./helpers.js";
@@ -303,7 +348,10 @@ describe("user_profiles", () => {
   it("auto-creates a profile when an auth user is created", async () => {
     const u = await createUser();
     const { data, error } = await admin()
-      .from("user_profiles").select("id,email").eq("id", u.id).single();
+      .from("user_profiles")
+      .select("id,email")
+      .eq("id", u.id)
+      .single();
     expect(error).toBeNull();
     expect(data.email).toBe(u.email);
   });
@@ -313,11 +361,17 @@ describe("user_profiles", () => {
     const other = await createUser();
     const cli = await userClient(u.email, u.password);
 
-    const { error: readErr } = await cli.from("user_profiles").select("id").eq("id", other.id).single();
+    const { error: readErr } = await cli
+      .from("user_profiles")
+      .select("id")
+      .eq("id", other.id)
+      .single();
     expect(readErr).toBeNull(); // read all
 
     const { error: updErr } = await cli
-      .from("user_profiles").update({ display_name: "hacker" }).eq("id", other.id);
+      .from("user_profiles")
+      .update({ display_name: "hacker" })
+      .eq("id", other.id);
     expect(updErr).not.toBeNull(); // cannot update others
   });
 });
@@ -331,6 +385,7 @@ Expected: FAIL (relation `user_profiles` does not exist).
 - [ ] **Step 3: Write the migration**
 
 `supabase/migrations/0002_user_profiles.sql`:
+
 ```sql
 create table public.user_profiles (
   id uuid primary key references auth.users (id) on delete cascade,
@@ -398,28 +453,36 @@ git commit -m "feat(db): user_profiles synced from auth.users with RLS"
 Adapted from `candystore/.../20260328100000_crud_permissions.sql` (drops `resource_permissions`; `user_permissions` references `permissions` directly).
 
 **Files:**
+
 - Create: `supabase/migrations/0003_permissions_core.sql`
 - Test: `tests/db/permissions.test.ts`
 
 **Interfaces:**
+
 - Produces: `public.permissions(id, key unique, name, description, scope)`; `public.user_permissions(id, user_id, permission_id, mode, expires_at, granted_by, reason, created_at)`; `public.has_global_permission(p_user_id uuid, p_key text) returns boolean`.
 
 - [ ] **Step 1: Write the failing test**
 
 `tests/db/permissions.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 import { admin, createUser, grantGlobal } from "./helpers.js";
 
 async function hasPerm(userId: string, key: string): Promise<boolean> {
-  const { data, error } = await admin().rpc("has_global_permission", { p_user_id: userId, p_key: key });
+  const { data, error } = await admin().rpc("has_global_permission", {
+    p_user_id: userId,
+    p_key: key,
+  });
   if (error) throw error;
   return data as boolean;
 }
 
 describe("permission catalog + has_global_permission", () => {
   it("seeds the 28-key catalog", async () => {
-    const { count } = await admin().from("permissions").select("*", { count: "exact", head: true });
+    const { count } = await admin()
+      .from("permissions")
+      .select("*", { count: "exact", head: true });
     expect(count).toBe(28);
   });
 
@@ -433,9 +496,16 @@ describe("permission catalog + has_global_permission", () => {
   it("an explicit deny overrides a grant", async () => {
     const u = await createUser();
     await grantGlobal(u.id, "platform.admin");
-    const { data: perm } = await admin().from("permissions").select("id").eq("key", "platform.admin").single();
+    const { data: perm } = await admin()
+      .from("permissions")
+      .select("id")
+      .eq("key", "platform.admin")
+      .single();
     await admin().from("user_permissions").insert({
-      user_id: u.id, permission_id: perm.id, mode: "deny", granted_by: u.id,
+      user_id: u.id,
+      permission_id: perm.id,
+      mode: "deny",
+      granted_by: u.id,
     });
     expect(await hasPerm(u.id, "platform.admin")).toBe(false);
   });
@@ -450,6 +520,7 @@ Expected: FAIL (relation `permissions` / function missing).
 - [ ] **Step 3: Write the migration**
 
 `supabase/migrations/0003_permissions_core.sql`:
+
 ```sql
 create table public.permissions (
   id uuid primary key default gen_random_uuid(),
@@ -547,15 +618,18 @@ git commit -m "feat(db): permission catalog (28 keys) + has_global_permission"
 Adapted from `candystore/.../20260408203000_default_buyer_permissions.sql`.
 
 **Files:**
+
 - Create: `supabase/migrations/0004_default_consumer_permissions.sql`
 - Test: extend `tests/db/permissions.test.ts`
 
 **Interfaces:**
+
 - Produces: trigger granting `event.read`, `session.read`, `content.read`, `subscriptions.manage` to every new `auth.users` row.
 
 - [ ] **Step 1: Write the failing test (append)**
 
 Append to `tests/db/permissions.test.ts`:
+
 ```ts
 describe("default consumer permissions", () => {
   it("grants the 4 consumer keys on signup", async () => {
@@ -566,8 +640,15 @@ describe("default consumer permissions", () => {
       .from("user_permissions")
       .select("permissions(key)")
       .eq("user_id", u.id);
-    const keys = (data ?? []).map((r: { permissions: { key: string } }) => r.permissions.key).sort();
-    expect(keys).toEqual(["content.read", "event.read", "session.read", "subscriptions.manage"]);
+    const keys = (data ?? [])
+      .map((r: { permissions: { key: string } }) => r.permissions.key)
+      .sort();
+    expect(keys).toEqual([
+      "content.read",
+      "event.read",
+      "session.read",
+      "subscriptions.manage",
+    ]);
   });
 });
 ```
@@ -580,6 +661,7 @@ Expected: FAIL (new user has no permissions yet).
 - [ ] **Step 3: Write the migration**
 
 `supabase/migrations/0004_default_consumer_permissions.sql`:
+
 ```sql
 create or replace function public.grant_default_consumer_permissions(p_user_id uuid)
 returns void security definer language plpgsql as $$
@@ -622,15 +704,18 @@ git commit -m "feat(db): grant default consumer permissions on signup"
 ## Task 6: Domain schema — events, sessions, occurrences
 
 **Files:**
+
 - Create: `supabase/migrations/0005_domain.sql`
 - Test: `tests/db/domain.test.ts`
 
 **Interfaces:**
+
 - Produces: `events(id, owner_id, title, description, category, banner_url, venue, start_date, end_date, timezone, status, visibility, event_code, created_at, updated_at)`; `sessions(id, event_id, owner_id nullable, title, description, track, status, created_at, updated_at)`; `session_occurrences(id, session_id, starts_at, ends_at)`. Enums `event_status`, `session_status`, `event_visibility`.
 
 - [ ] **Step 1: Write the failing test**
 
 `tests/db/domain.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 import { admin } from "./helpers.js";
@@ -638,19 +723,29 @@ import { admin } from "./helpers.js";
 describe("domain schema", () => {
   it("creates an event with defaults and cascades to sessions/occurrences on delete", async () => {
     const a = admin();
-    const { data: ev, error: evErr } = await a.from("events")
-      .insert({ title: "Fest", timezone: "UTC" }).select("id,status,visibility").single();
+    const { data: ev, error: evErr } = await a
+      .from("events")
+      .insert({ title: "Fest", timezone: "UTC" })
+      .select("id,status,visibility")
+      .single();
     expect(evErr).toBeNull();
     expect(ev.status).toBe("draft");
     expect(ev.visibility).toBe("public");
 
-    const { data: se } = await a.from("sessions")
-      .insert({ event_id: ev.id, title: "Talk" }).select("id").single();
-    await a.from("session_occurrences")
+    const { data: se } = await a
+      .from("sessions")
+      .insert({ event_id: ev.id, title: "Talk" })
+      .select("id")
+      .single();
+    await a
+      .from("session_occurrences")
       .insert({ session_id: se.id, starts_at: "2026-08-14T18:00:00Z" });
 
     await a.from("events").delete().eq("id", ev.id);
-    const { count } = await a.from("sessions").select("*", { count: "exact", head: true }).eq("id", se.id);
+    const { count } = await a
+      .from("sessions")
+      .select("*", { count: "exact", head: true })
+      .eq("id", se.id);
     expect(count).toBe(0); // cascade
   });
 });
@@ -664,6 +759,7 @@ Expected: FAIL (relation `events` does not exist).
 - [ ] **Step 3: Write the migration**
 
 `supabase/migrations/0005_domain.sql`:
+
 ```sql
 create type event_status as enum ('draft','published','canceled','archived');
 create type event_visibility as enum ('public','private');
@@ -734,10 +830,12 @@ git commit -m "feat(db): events, sessions, session_occurrences schema"
 ## Task 7: Support-content `documents` table
 
 **Files:**
+
 - Create: `supabase/migrations/0006_documents.sql`
 - Test: extend `tests/db/domain.test.ts`
 
 **Interfaces:**
+
 - Produces: `documents(id, event_id, session_id, storage_path, filename, content_type, size_bytes, title, is_published, uploaded_by, created_at, updated_at)` with a CHECK that exactly one of `event_id`/`session_id` is set.
 
 - [ ] **Step 1: Write the failing test (append)**
@@ -746,8 +844,11 @@ git commit -m "feat(db): events, sessions, session_occurrences schema"
 describe("documents", () => {
   it("rejects a document with neither or both parents", async () => {
     const a = admin();
-    const { error: noneErr } = await a.from("documents")
-      .insert({ storage_path: "x", filename: "f", content_type: "application/pdf" });
+    const { error: noneErr } = await a.from("documents").insert({
+      storage_path: "x",
+      filename: "f",
+      content_type: "application/pdf",
+    });
     expect(noneErr).not.toBeNull();
   });
 });
@@ -761,6 +862,7 @@ Expected: FAIL (relation `documents` does not exist).
 - [ ] **Step 3: Write the migration**
 
 `supabase/migrations/0006_documents.sql`:
+
 ```sql
 create table public.documents (
   id uuid primary key default gen_random_uuid(),
@@ -803,15 +905,18 @@ git commit -m "feat(db): documents support-content table with single-parent cons
 ## Task 8: Delegation tables
 
 **Files:**
+
 - Create: `supabase/migrations/0007_delegation.sql`
 - Test: `tests/db/delegation.test.ts`
 
 **Interfaces:**
+
 - Produces: `event_delegates(id, event_id, user_id, permissions text[], granted_by, created_at, updated_at)`; `event_session_owners(id, event_id, user_id, granted_by, created_at)`; `session_delegates(id, session_id, user_id, permissions text[], granted_by, created_at, updated_at)` — each unique on `(parent, user_id)`.
 
 - [ ] **Step 1: Write the failing test**
 
 `tests/db/delegation.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 import { admin, createUser, makeEvent } from "./helpers.js";
@@ -824,8 +929,10 @@ describe("delegation tables", () => {
     const { id: eventId } = await makeEvent(a, { owner_id: owner.id });
 
     const row = {
-      event_id: eventId, user_id: delegate.id,
-      permissions: ["event.edit_details", "event.broadcast"], granted_by: owner.id,
+      event_id: eventId,
+      user_id: delegate.id,
+      permissions: ["event.edit_details", "event.broadcast"],
+      granted_by: owner.id,
     };
     const { error } = await a.from("event_delegates").insert(row);
     expect(error).toBeNull();
@@ -844,6 +951,7 @@ Expected: FAIL (relation `event_delegates` does not exist).
 - [ ] **Step 3: Write the migration**
 
 `supabase/migrations/0007_delegation.sql`:
+
 ```sql
 create table public.event_delegates (
   id uuid primary key default gen_random_uuid(),
@@ -901,20 +1009,33 @@ git commit -m "feat(db): two-level scoped delegation tables"
 ## Task 9: Waterfall helper functions
 
 **Files:**
+
 - Create: `supabase/migrations/0008_waterfall_helpers.sql`
 - Test: `tests/db/waterfall.test.ts`
 
 **Interfaces:**
+
 - Produces: `public.can_edit_event(p_event_id uuid, p_key text) returns boolean`; `public.can_act_on_session(p_session_id uuid, p_key text) returns boolean`. Both use `auth.uid()` internally.
 
 - [ ] **Step 1: Write the failing test**
 
 `tests/db/waterfall.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
-import { admin, createUser, makeEvent, makeSession, userClient } from "./helpers.js";
+import {
+  admin,
+  createUser,
+  makeEvent,
+  makeSession,
+  userClient,
+} from "./helpers.js";
 
-async function can(client: Awaited<ReturnType<typeof userClient>>, fn: string, args: object): Promise<boolean> {
+async function can(
+  client: Awaited<ReturnType<typeof userClient>>,
+  fn: string,
+  args: object,
+): Promise<boolean> {
   const { data, error } = await client.rpc(fn, args);
   if (error) throw error;
   return data as boolean;
@@ -927,15 +1048,33 @@ describe("waterfall helpers", () => {
     const delegate = await createUser();
     const { id: eventId } = await makeEvent(a, { owner_id: owner.id });
     await a.from("event_delegates").insert({
-      event_id: eventId, user_id: delegate.id, permissions: ["event.edit_details"], granted_by: owner.id,
+      event_id: eventId,
+      user_id: delegate.id,
+      permissions: ["event.edit_details"],
+      granted_by: owner.id,
     });
 
     const ownerCli = await userClient(owner.email, owner.password);
     const delCli = await userClient(delegate.email, delegate.password);
 
-    expect(await can(ownerCli, "can_edit_event", { p_event_id: eventId, p_key: "event.cancel" })).toBe(true);
-    expect(await can(delCli, "can_edit_event", { p_event_id: eventId, p_key: "event.edit_details" })).toBe(true);
-    expect(await can(delCli, "can_edit_event", { p_event_id: eventId, p_key: "event.cancel" })).toBe(false);
+    expect(
+      await can(ownerCli, "can_edit_event", {
+        p_event_id: eventId,
+        p_key: "event.cancel",
+      }),
+    ).toBe(true);
+    expect(
+      await can(delCli, "can_edit_event", {
+        p_event_id: eventId,
+        p_key: "event.edit_details",
+      }),
+    ).toBe(true);
+    expect(
+      await can(delCli, "can_edit_event", {
+        p_event_id: eventId,
+        p_key: "event.cancel",
+      }),
+    ).toBe(false);
   });
 
   it("event moderator can act on a session below (override)", async () => {
@@ -944,7 +1083,12 @@ describe("waterfall helpers", () => {
     const { id: eventId } = await makeEvent(a, { owner_id: owner.id });
     const { id: sessionId } = await makeSession(a, eventId);
     const ownerCli = await userClient(owner.email, owner.password);
-    expect(await can(ownerCli, "can_act_on_session", { p_session_id: sessionId, p_key: "session.edit_details" })).toBe(true);
+    expect(
+      await can(ownerCli, "can_act_on_session", {
+        p_session_id: sessionId,
+        p_key: "session.edit_details",
+      }),
+    ).toBe(true);
   });
 });
 ```
@@ -957,6 +1101,7 @@ Expected: FAIL (function `can_edit_event` does not exist).
 - [ ] **Step 3: Write the migration**
 
 `supabase/migrations/0008_waterfall_helpers.sql`:
+
 ```sql
 create or replace function public.can_edit_event(p_event_id uuid, p_key text)
 returns boolean language sql security definer stable as $$
@@ -1004,19 +1149,28 @@ git commit -m "feat(db): waterfall permission helpers (event + session)"
 ## Task 10: RLS policies + the permission matrix test
 
 **Files:**
+
 - Create: `supabase/migrations/0009_rls_policies.sql`
 - Test: `tests/db/rls-matrix.test.ts`
 
 **Interfaces:**
+
 - Consumes: `can_edit_event`, `can_act_on_session`, `has_global_permission`.
 - Produces: RLS policies on `events`, `sessions`, `session_occurrences`, `documents`, and the delegation tables.
 
 - [ ] **Step 1: Write the failing data-driven matrix test**
 
 `tests/db/rls-matrix.test.ts`:
+
 ```ts
 import { beforeAll, describe, expect, it } from "vitest";
-import { admin, createUser, makeEvent, makeSession, userClient } from "./helpers.js";
+import {
+  admin,
+  createUser,
+  makeEvent,
+  makeSession,
+  userClient,
+} from "./helpers.js";
 
 // One event with: owner, a Designer (content only), a Communications mgr (broadcast only).
 let eventId: string;
@@ -1029,10 +1183,16 @@ beforeAll(async () => {
   const designerU = await createUser();
   const { id: eId } = await makeEvent(a, { owner_id: owner.id });
   const { id: sId } = await makeSession(a, eId, { owner_id: owner.id });
-  eventId = eId; sessionId = sId;
+  eventId = eId;
+  sessionId = sId;
   await a.from("event_delegates").insert({
-    event_id: eId, user_id: designerU.id,
-    permissions: ["event_content.create", "event_content.update", "event_content.delete"],
+    event_id: eId,
+    user_id: designerU.id,
+    permissions: [
+      "event_content.create",
+      "event_content.update",
+      "event_content.delete",
+    ],
     granted_by: owner.id,
   });
   designer = await userClient(designerU.email, designerU.password);
@@ -1041,22 +1201,33 @@ beforeAll(async () => {
 describe("RLS permission matrix", () => {
   it("Designer can insert event documents", async () => {
     const { error } = await designer.from("documents").insert({
-      event_id: eventId, storage_path: "p", filename: "flyer.pdf",
+      event_id: eventId,
+      storage_path: "p",
+      filename: "flyer.pdf",
     });
     expect(error).toBeNull();
   });
 
   it("Designer cannot edit event details", async () => {
-    const { error } = await designer.from("events").update({ title: "hijacked" }).eq("id", eventId);
+    const { error } = await designer
+      .from("events")
+      .update({ title: "hijacked" })
+      .eq("id", eventId);
     expect(error).not.toBeNull();
   });
 
   it("Anonymous cannot read a draft event", async () => {
-    const anonCli = await (await import("@supabase/supabase-js")).createClient(
-      process.env.SUPABASE_URL as string, process.env.SUPABASE_ANON_KEY as string,
+    const anonCli = await (
+      await import("@supabase/supabase-js")
+    ).createClient(
+      process.env.SUPABASE_URL as string,
+      process.env.SUPABASE_ANON_KEY as string,
       { auth: { persistSession: false } },
     );
-    const { data } = await anonCli.from("events").select("id").eq("id", eventId);
+    const { data } = await anonCli
+      .from("events")
+      .select("id")
+      .eq("id", eventId);
     expect(data).toEqual([]);
   });
 });
@@ -1070,6 +1241,7 @@ Expected: FAIL (Designer insert blocked / draft visible — policies absent or d
 - [ ] **Step 3: Write the migration**
 
 `supabase/migrations/0009_rls_policies.sql`:
+
 ```sql
 alter table public.events enable row level security;
 alter table public.sessions enable row level security;
@@ -1167,15 +1339,18 @@ git commit -m "feat(db): RLS policies across domain + delegation tables"
 ## Task 11: Severe-action RPCs
 
 **Files:**
+
 - Create: `supabase/migrations/0010_action_rpcs.sql`
 - Test: `tests/db/rpcs.test.ts`
 
 **Interfaces:**
+
 - Produces: `cancel_event(p_event_id uuid)`, `publish_event(p_event_id uuid)`, `set_event_visibility(p_event_id uuid, p_visibility text)`, `broadcast_announcement(p_event_id uuid, p_title text, p_body text)` — all SECURITY DEFINER, each checking its key, raising `insufficient_privilege` otherwise. `broadcast_announcement` is a stub that validates + returns (notification fan-out lands in sub-project #3).
 
 - [ ] **Step 1: Write the failing test**
 
 `tests/db/rpcs.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 import { admin, createUser, makeEvent, userClient } from "./helpers.js";
@@ -1185,17 +1360,28 @@ describe("severe-action RPCs", () => {
     const a = admin();
     const owner = await createUser();
     const other = await createUser();
-    const { id } = await makeEvent(a, { owner_id: owner.id, status: "published" });
+    const { id } = await makeEvent(a, {
+      owner_id: owner.id,
+      status: "published",
+    });
 
     const otherCli = await userClient(other.email, other.password);
-    const { error: denied } = await otherCli.rpc("cancel_event", { p_event_id: id });
+    const { error: denied } = await otherCli.rpc("cancel_event", {
+      p_event_id: id,
+    });
     expect(denied).not.toBeNull();
 
     const ownerCli = await userClient(owner.email, owner.password);
-    const { error: ok } = await ownerCli.rpc("cancel_event", { p_event_id: id });
+    const { error: ok } = await ownerCli.rpc("cancel_event", {
+      p_event_id: id,
+    });
     expect(ok).toBeNull();
 
-    const { data } = await a.from("events").select("status").eq("id", id).single();
+    const { data } = await a
+      .from("events")
+      .select("status")
+      .eq("id", id)
+      .single();
     expect(data.status).toBe("canceled");
   });
 });
@@ -1209,6 +1395,7 @@ Expected: FAIL (function `cancel_event` does not exist).
 - [ ] **Step 3: Write the migration**
 
 `supabase/migrations/0010_action_rpcs.sql`:
+
 ```sql
 create or replace function public.cancel_event(p_event_id uuid)
 returns void security definer language plpgsql as $$
@@ -1272,15 +1459,18 @@ git commit -m "feat(db): severe-action RPCs (cancel/publish/visibility/broadcast
 ## Task 12: Orphan-cascade triggers
 
 **Files:**
+
 - Create: `supabase/migrations/0011_orphan_cascade.sql`
 - Test: `tests/db/cascade.test.ts`
 
 **Interfaces:**
+
 - Produces: trigger on `event_session_owners` AFTER DELETE → nulls `sessions.owner_id` for that user in that event; trigger on `sessions` AFTER UPDATE of `owner_id` → NULL deletes that session's `session_delegates`.
 
 - [ ] **Step 1: Write the failing test**
 
 `tests/db/cascade.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 import { admin, createUser, makeEvent, makeSession } from "./helpers.js";
@@ -1292,16 +1482,36 @@ describe("orphan cascade", () => {
     const sowner = await createUser();
     const sdelegate = await createUser();
     const { id: eventId } = await makeEvent(a, { owner_id: owner.id });
-    await a.from("event_session_owners").insert({ event_id: eventId, user_id: sowner.id, granted_by: owner.id });
-    const { id: sessionId } = await makeSession(a, eventId, { owner_id: sowner.id });
-    await a.from("session_delegates").insert({ session_id: sessionId, user_id: sdelegate.id, permissions: ["session.edit_details"], granted_by: sowner.id });
+    await a
+      .from("event_session_owners")
+      .insert({ event_id: eventId, user_id: sowner.id, granted_by: owner.id });
+    const { id: sessionId } = await makeSession(a, eventId, {
+      owner_id: sowner.id,
+    });
+    await a.from("session_delegates").insert({
+      session_id: sessionId,
+      user_id: sdelegate.id,
+      permissions: ["session.edit_details"],
+      granted_by: sowner.id,
+    });
 
-    await a.from("event_session_owners").delete().eq("event_id", eventId).eq("user_id", sowner.id);
+    await a
+      .from("event_session_owners")
+      .delete()
+      .eq("event_id", eventId)
+      .eq("user_id", sowner.id);
 
-    const { data: sess } = await a.from("sessions").select("owner_id").eq("id", sessionId).single();
+    const { data: sess } = await a
+      .from("sessions")
+      .select("owner_id")
+      .eq("id", sessionId)
+      .single();
     expect(sess.owner_id).toBeNull(); // orphaned
 
-    const { count } = await a.from("session_delegates").select("*", { count: "exact", head: true }).eq("session_id", sessionId);
+    const { count } = await a
+      .from("session_delegates")
+      .select("*", { count: "exact", head: true })
+      .eq("session_id", sessionId);
     expect(count).toBe(0); // delegates dropped
   });
 });
@@ -1315,6 +1525,7 @@ Expected: FAIL (owner_id still set / delegates remain).
 - [ ] **Step 3: Write the migration**
 
 `supabase/migrations/0011_orphan_cascade.sql`:
+
 ```sql
 create or replace function public.orphan_sessions_of_removed_owner()
 returns trigger security definer language plpgsql as $$
@@ -1364,15 +1575,18 @@ git commit -m "feat(db): orphan-cascade triggers for revoked session owners"
 Adapted from `candystore/.../20260325400000_audit_system.sql` (audit-read RLS uses `has_global_permission` + scoped event check instead of `resource_permissions`).
 
 **Files:**
+
 - Create: `supabase/migrations/0012_audit.sql`
 - Test: `tests/db/audit.test.ts`
 
 **Interfaces:**
+
 - Produces: `audit` schema + `audit.logged_actions`; `audit.log_changes()` + `audit.enable_tracking(regclass)`; tracking enabled on all domain + permission + delegation tables; immutability guard; read gated by `audit.read` (admin) or scoped event authority.
 
 - [ ] **Step 1: Write the failing test**
 
 `tests/db/audit.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 import { admin, createUser, makeEvent } from "./helpers.js";
@@ -1382,15 +1596,25 @@ describe("auditing", () => {
     const a = admin();
     const owner = await createUser();
     const { id } = await makeEvent(a, { owner_id: owner.id, title: "Audited" });
-    const { data } = await a.schema("audit").from("logged_actions")
-      .select("action_type,row_data").eq("table_name", "events").order("event_id", { ascending: false }).limit(1).single();
+    const { data } = await a
+      .schema("audit")
+      .from("logged_actions")
+      .select("action_type,row_data")
+      .eq("table_name", "events")
+      .order("event_id", { ascending: false })
+      .limit(1)
+      .single();
     expect(data.action_type).toBe("INSERT");
     expect((data.row_data as { id: string }).id).toBe(id);
   });
 
   it("blocks updates/deletes on audit rows (immutable)", async () => {
     const a = admin();
-    const { error } = await a.schema("audit").from("logged_actions").update({ table_name: "x" }).eq("event_id", 1);
+    const { error } = await a
+      .schema("audit")
+      .from("logged_actions")
+      .update({ table_name: "x" })
+      .eq("event_id", 1);
     expect(error).not.toBeNull();
   });
 });
@@ -1404,6 +1628,7 @@ Expected: FAIL (schema `audit` does not exist).
 - [ ] **Step 3: Write the migration**
 
 `supabase/migrations/0012_audit.sql`:
+
 ```sql
 create schema if not exists audit;
 grant usage on schema audit to authenticated;
@@ -1512,15 +1737,18 @@ git commit -m "feat(db): deep immutable auditing with scoped read"
 ## Task 14: `packages/auth` helper + regen types + docs
 
 **Files:**
+
 - Create: `packages/auth/package.json`, `packages/auth/tsconfig.json`, `packages/auth/src/permissions.ts`, `packages/auth/src/permissions.test.ts`, `packages/auth/src/index.ts`
 - Modify: `packages/db/src/database.types.ts` (regen), `CLAUDE.md`
 
 **Interfaces:**
+
 - Produces: `PERMISSION_KEYS` (readonly tuple of the 28 keys); `type PermissionKey`; `matchesPermissions(granted: Set<string>, required: string | readonly string[], mode?: "all" | "any"): boolean`.
 
 - [ ] **Step 1: Write the failing unit test**
 
 `packages/auth/src/permissions.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 import { matchesPermissions } from "./permissions.js";
@@ -1532,8 +1760,20 @@ describe("matchesPermissions", () => {
     expect(matchesPermissions(granted, "event.cancel")).toBe(false);
   });
   it("supports all vs any", () => {
-    expect(matchesPermissions(granted, ["event.edit_details", "event.cancel"], "all")).toBe(false);
-    expect(matchesPermissions(granted, ["event.edit_details", "event.cancel"], "any")).toBe(true);
+    expect(
+      matchesPermissions(
+        granted,
+        ["event.edit_details", "event.cancel"],
+        "all",
+      ),
+    ).toBe(false);
+    expect(
+      matchesPermissions(
+        granted,
+        ["event.edit_details", "event.cancel"],
+        "any",
+      ),
+    ).toBe(true);
   });
 });
 ```
@@ -1546,6 +1786,7 @@ Expected: FAIL (module not found).
 - [ ] **Step 3: Create the package + implementation**
 
 `packages/auth/package.json`:
+
 ```json
 {
   "name": "@puck/auth",
@@ -1553,26 +1794,56 @@ Expected: FAIL (module not found).
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },
-  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run", "test:coverage": "vitest run --coverage" }
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  }
 }
 ```
+
 `packages/auth/tsconfig.json`:
+
 ```json
-{ "extends": "../../tsconfig.base.json",
+{
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": { "rootDir": "src", "outDir": "dist", "composite": true },
-  "include": ["src/**/*"] }
+  "include": ["src/**/*"]
+}
 ```
+
 `packages/auth/src/permissions.ts`:
+
 ```ts
 export const PERMISSION_KEYS = [
-  "platform.admin","events.create","audit.read",
-  "event.read","session.read","content.read","subscriptions.manage",
-  "event.edit_details","event.edit_schedule","event.manage_visibility",
-  "event.manage_lifecycle","event.cancel","event.broadcast",
-  "event.manage_delegates","event.manage_session_owners","event.moderate_sessions","event.delete",
-  "event_content.create","event_content.update","event_content.delete",
-  "session.create","session.edit_details","session.edit_schedule","session.delete","session.manage_delegates",
-  "session_content.create","session_content.update","session_content.delete",
+  "platform.admin",
+  "events.create",
+  "audit.read",
+  "event.read",
+  "session.read",
+  "content.read",
+  "subscriptions.manage",
+  "event.edit_details",
+  "event.edit_schedule",
+  "event.manage_visibility",
+  "event.manage_lifecycle",
+  "event.cancel",
+  "event.broadcast",
+  "event.manage_delegates",
+  "event.manage_session_owners",
+  "event.moderate_sessions",
+  "event.delete",
+  "event_content.create",
+  "event_content.update",
+  "event_content.delete",
+  "session.create",
+  "session.edit_details",
+  "session.edit_schedule",
+  "session.delete",
+  "session.manage_delegates",
+  "session_content.create",
+  "session_content.update",
+  "session_content.delete",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
@@ -1583,12 +1854,20 @@ export function matchesPermissions(
   mode: "all" | "any" = "all",
 ): boolean {
   const keys = typeof required === "string" ? [required] : required;
-  return mode === "all" ? keys.every((k) => granted.has(k)) : keys.some((k) => granted.has(k));
+  return mode === "all"
+    ? keys.every((k) => granted.has(k))
+    : keys.some((k) => granted.has(k));
 }
 ```
+
 `packages/auth/src/index.ts`:
+
 ```ts
-export { PERMISSION_KEYS, type PermissionKey, matchesPermissions } from "./permissions.js";
+export {
+  PERMISSION_KEYS,
+  type PermissionKey,
+  matchesPermissions,
+} from "./permissions.js";
 ```
 
 - [ ] **Step 4: Run green + typecheck**
@@ -1599,10 +1878,12 @@ Expected: PASS.
 - [ ] **Step 5: Regenerate DB types + verify the key set matches the catalog**
 
 Run:
+
 ```bash
 pnpm db:types
 node -e "const {PERMISSION_KEYS}=require('./packages/auth/src/permissions.ts'); console.log(PERMISSION_KEYS.length)"  # 28
 ```
+
 Confirm `PERMISSION_KEYS.length === 28` (matches the seeded catalog in Task 4).
 
 - [ ] **Step 6: Update CLAUDE.md getting-started**
@@ -1622,19 +1903,19 @@ git commit -m "feat(auth): permission key catalog + matchesPermissions helper; r
 
 **1. Spec coverage**
 
-| Spec section | Task(s) |
-|---|---|
-| §2.2 catalog (28 keys) | 4 (seed), 14 (TS mirror) |
-| §2.1 waterfall hierarchy | 9 (helpers), 10 (RLS) |
-| §2.3 templates | Stored as `permissions[]` arrays (Tasks 8/10); preset *UI* is sub-project #2 — noted as out of scope here |
-| §2.4 orphan cascade | 12 |
-| §3.1 identity/permission core | 3, 4, 5 |
-| §3.2 domain (events/sessions/occurrences/documents) | 6, 7 |
-| §3.3 delegation tables | 8 |
-| §4 enforcement (RLS + RPCs + helpers) | 9, 10, 11 |
-| §5 deep auditing | 13 |
-| §6 auth (signup triggers; profiles) | 3, 5 — *OAuth provider config + login UI = sub-project #2* |
-| §7 testing (TDD, unit + DB-integration) | every task; 14 (unit) |
+| Spec section                                        | Task(s)                                                                                                   |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| §2.2 catalog (28 keys)                              | 4 (seed), 14 (TS mirror)                                                                                  |
+| §2.1 waterfall hierarchy                            | 9 (helpers), 10 (RLS)                                                                                     |
+| §2.3 templates                                      | Stored as `permissions[]` arrays (Tasks 8/10); preset _UI_ is sub-project #2 — noted as out of scope here |
+| §2.4 orphan cascade                                 | 12                                                                                                        |
+| §3.1 identity/permission core                       | 3, 4, 5                                                                                                   |
+| §3.2 domain (events/sessions/occurrences/documents) | 6, 7                                                                                                      |
+| §3.3 delegation tables                              | 8                                                                                                         |
+| §4 enforcement (RLS + RPCs + helpers)               | 9, 10, 11                                                                                                 |
+| §5 deep auditing                                    | 13                                                                                                        |
+| §6 auth (signup triggers; profiles)                 | 3, 5 — _OAuth provider config + login UI = sub-project #2_                                                |
+| §7 testing (TDD, unit + DB-integration)             | every task; 14 (unit)                                                                                     |
 
 Gaps intentionally deferred (documented, not missing): preset **UI**, OAuth provider wiring, and the **login UI** belong to sub-project #2; notification/pgmq tables to #3.
 

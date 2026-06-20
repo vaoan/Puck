@@ -4,8 +4,8 @@ import { z } from "zod";
 import type { ApiContext } from "../context.js";
 
 const followBody = z.object({
-  userId: z.string().uuid(),
-  eventId: z.string().uuid(),
+  userId: z.uuid(),
+  eventId: z.uuid(),
 });
 
 /**
@@ -22,7 +22,7 @@ export function registerFollowRoutes(
   app.post("/follows", async (request, reply) => {
     const parsed = followBody.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: z.flattenError(parsed.error) });
     }
 
     const { error } = await ctx.client
@@ -42,7 +42,7 @@ export function registerFollowRoutes(
   app.delete("/follows", async (request, reply) => {
     const parsed = followBody.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: z.flattenError(parsed.error) });
     }
 
     const { error } = await ctx.client

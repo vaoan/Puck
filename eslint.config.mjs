@@ -77,5 +77,14 @@ export default tseslint.config(
     plugins: { vitest },
     ...vitest.configs.recommended,
   },
+  {
+    files: ["**/*.test.ts", "**/*.spec.ts"],
+    rules: {
+      // Test fakes implement async port methods without awaiting, and pass
+      // method references as stubs — both are expected in test doubles.
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/unbound-method": "off",
+    },
+  },
   prettier,
 );

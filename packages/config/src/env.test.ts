@@ -25,6 +25,6 @@ describe("loadEnv", () => {
   });
 
   it("throws a descriptive error when required config is missing", () => {
-    expect(() => loadEnv({})).toThrowError(/SUPABASE_URL/);
+    expect(() => loadEnv({})).toThrow(/SUPABASE_URL/);
   });
 });

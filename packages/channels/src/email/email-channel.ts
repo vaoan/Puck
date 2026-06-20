@@ -30,10 +30,9 @@ interface EmailSender {
  * pipeline run end-to-end locally with zero setup. */
 function createConsoleSender(): EmailSender {
   return {
-    async send({ to, subject }) {
-      // eslint-disable-next-line no-console -- intentional dev transport
+    send({ to, subject }) {
       console.info(`[email:console] → ${to} :: ${subject}`);
-      return { ok: true, providerRef: "console" };
+      return Promise.resolve({ ok: true, providerRef: "console" });
     },
   };
 }
@@ -58,17 +57,19 @@ function createResendSender(apiKey: string): EmailSender {
 
 function resolveSender(options: EmailChannelOptions): EmailSender {
   switch (options.provider) {
-    case "resend":
+    case "resend": {
       if (!options.resendApiKey) {
         throw new Error("EMAIL_PROVIDER=resend requires RESEND_API_KEY");
       }
       return createResendSender(options.resendApiKey);
-    case "smtp":
+    }
+    case "smtp": {
       // Placeholder: add a nodemailer-based sender here when SMTP is needed.
       throw new Error("SMTP email provider is not implemented yet");
-    case "console":
-    default:
+    }
+    default: {
       return createConsoleSender();
+    }
   }
 }
 

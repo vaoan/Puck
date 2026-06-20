@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment -- Supabase RPC results
+   are untyped; the pgmq row shape is cast to PgmqRow at the boundary below. */
 import type { Queue, QueueMessage } from "@puck/core";
 import type { SupabaseClient } from "@supabase/supabase-js";
 

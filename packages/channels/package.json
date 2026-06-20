@@ -16,5 +16,8 @@
     "@puck/core": "workspace:*",
     "grammy": "^1.30.0",
     "resend": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
   }
 }

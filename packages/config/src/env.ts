@@ -21,14 +21,14 @@ export const envSchema = z.object({
     .default("info"),
 
   // Supabase
-  SUPABASE_URL: z.string().url(),
+  SUPABASE_URL: z.url(),
   SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
   // API service
   API_HOST: z.string().default("0.0.0.0"),
   API_PORT: z.coerce.number().int().positive().default(5200),
-  PUBLIC_BASE_URL: z.string().url().optional(),
+  PUBLIC_BASE_URL: z.url().optional(),
   // Shared secret guarding internal/service-to-service endpoints (e.g. event
   // change intake from Janus). Required in production.
   INTERNAL_API_KEY: z.string().optional(),

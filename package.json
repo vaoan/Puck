@@ -55,7 +55,7 @@
   "lint-staged": {
     "*.{ts,js,mjs}": [
       "prettier --check",
-      "eslint --max-warnings=0",
+      "eslint --max-warnings=0 --no-warn-ignored",
       "secretlint"
     ],
     "*.{json,md}": [

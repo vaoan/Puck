@@ -8,8 +8,9 @@ async function main(): Promise<void> {
   await app.listen({ host: ctx.env.API_HOST, port: ctx.env.API_PORT });
 }
 
-main().catch((error: unknown) => {
-  // eslint-disable-next-line no-console -- nothing else is wired up yet at boot
+try {
+  await main();
+} catch (error) {
   console.error("failed to start puck api", error);
   process.exitCode = 1;
-});
+}

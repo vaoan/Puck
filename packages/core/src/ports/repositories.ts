@@ -28,10 +28,14 @@ export interface NotificationRepository {
   getById(id: string): Promise<Notification | null>;
 
   /**
-   * Insert a notification if its `dedupeKey` is new. Returns the row whether it
-   * was created or already existed (idempotent upsert on the unique key).
+   * Insert a notification if its `dedupeKey` is new (idempotent upsert on the
+   * unique key). Returns the canonical row plus `created`: true only when this
+   * call inserted it, false when an earlier call already had. Callers use
+   * `created` to enqueue work exactly once across replays.
    */
-  createIfAbsent(input: NewNotification): Promise<Notification>;
+  createIfAbsent(
+    input: NewNotification,
+  ): Promise<{ notification: Notification; created: boolean }>;
 
   markSent(id: string, sentAt: string): Promise<void>;
   /** Terminal failure — notification will not be retried. */

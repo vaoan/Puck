@@ -25,9 +25,7 @@ export function buildChannelRegistry(env: Env): ChannelRegistry {
   ];
 
   if (env.TELEGRAM_BOT_TOKEN) {
-    channels.push(
-      createTelegramChannel({ botToken: env.TELEGRAM_BOT_TOKEN }),
-    );
+    channels.push(createTelegramChannel({ botToken: env.TELEGRAM_BOT_TOKEN }));
   }
 
   return createChannelRegistry(channels);

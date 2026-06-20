@@ -9,7 +9,6 @@ import {
   type FanOutJob,
   type NotificationJob,
   type Queue,
-  type QueueMessage,
 } from "@puck/core";
 import {
   createEventChangeRepository,
@@ -19,8 +18,13 @@ import {
   createServiceClient,
   createSubscriptionRepository,
 } from "@puck/db";
-import { createPgmqQueue, FANOUT_QUEUE, NOTIFICATIONS_QUEUE } from "@puck/queue";
+import {
+  createPgmqQueue,
+  FANOUT_QUEUE,
+  NOTIFICATIONS_QUEUE,
+} from "@puck/queue";
 
+import { drain } from "./drain.js";
 import { logger } from "./logger.js";
 
 /**
@@ -92,10 +96,14 @@ async function main(): Promise<void> {
         );
         return "ack";
       },
+      logger,
     );
 
-    const handledNotify = await drain(notifyQueue, (message) =>
-      deliverNotification(message.payload.notificationId, deliverDeps),
+    const handledNotify = await drain(
+      notifyQueue,
+      (message) =>
+        deliverNotification(message.payload.notificationId, deliverDeps),
+      logger,
     );
 
     // Idle-sleep only when both queues were empty, so a backlog drains fast.
@@ -105,41 +113,13 @@ async function main(): Promise<void> {
   }
 }
 
-/**
- * Read a batch from `queue`, run `handle` per message, and settle each message
- * on the SAME queue according to the returned outcome:
- *   ack     → delete; retry → leave for redelivery; archive → dead-letter.
- * A thrown handler leaves the message for redelivery.
- */
-async function drain<T>(
-  queue: Queue<T>,
-  handle: (message: QueueMessage<T>) => Promise<DeliveryOutcome>,
-): Promise<number> {
-  const messages = await queue.read({ max: 10, visibilitySeconds: 30 });
-  for (const message of messages) {
-    try {
-      const outcome = await handle(message);
-      if (outcome === "ack") {
-        await queue.ack(message.id);
-      } else if (outcome === "archive") {
-        await queue.archive(message.id);
-      }
-      // "retry": leave it; pgmq redelivers after the visibility timeout.
-    } catch (error) {
-      logger.error(
-        { err: error, messageId: message.id },
-        "failed to process message; leaving for redelivery",
-      );
-    }
-  }
-  return messages.length;
-}
-
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-main().catch((error: unknown) => {
+try {
+  await main();
+} catch (error) {
   logger.fatal({ err: error }, "worker crashed");
   process.exitCode = 1;
-});
+}

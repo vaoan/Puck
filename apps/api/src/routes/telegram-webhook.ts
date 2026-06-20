@@ -26,6 +26,7 @@ export function registerTelegramWebhook(
   }
 
   app.post("/telegram/webhook", async (request, reply) => {
+    // eslint-disable-next-line security/detect-object-injection -- constant header name, not user input
     const provided = request.headers[SECRET_HEADER];
     if (typeof provided !== "string" || !safeEqual(provided, secret)) {
       return reply.status(401).send({ error: "unauthorized" });

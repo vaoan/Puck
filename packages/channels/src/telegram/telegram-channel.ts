@@ -50,13 +50,13 @@ export function createTelegramChannel(
       }
     },
 
-    async healthCheck() {
-      return Boolean(options.botToken);
+    healthCheck() {
+      return Promise.resolve(Boolean(options.botToken));
     },
   };
 }
 
 /** Escape the characters MarkdownV2 treats as special. */
 function escapeMarkdown(input: string): string {
-  return input.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, (char) => `\\${char}`);
+  return input.replaceAll(/[_*[\]()~`>#+\-=|{}.!\\]/g, (char) => `\\${char}`);
 }

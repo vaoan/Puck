@@ -1,4 +1,8 @@
-import type { EventChange, EventChangeType, PuckEvent } from "../domain/events.js";
+import type {
+  EventChange,
+  EventChangeType,
+  PuckEvent,
+} from "../domain/events.js";
 import type { RenderedMessage } from "../domain/notifications.js";
 
 const TITLES: Record<EventChangeType, (event: PuckEvent) => string> = {
@@ -23,8 +27,7 @@ export function renderEventChange(
   change: EventChange,
 ): RenderedMessage {
   const title = change.payload.title ?? TITLES[change.type](event);
-  const body =
-    change.payload.body ?? defaultBody(event, change.type) ?? title;
+  const body = change.payload.body ?? defaultBody(event, change.type) ?? title;
   return { title, body };
 }
 
@@ -33,17 +36,21 @@ function defaultBody(
   type: EventChangeType,
 ): string | undefined {
   switch (type) {
-    case "location_changed":
+    case "location_changed": {
       return event.location
         ? `New location: ${event.location}`
         : "The location has changed.";
-    case "delayed":
+    }
+    case "delayed": {
       return event.startsAt
         ? `New start time: ${event.startsAt}`
         : "The event has been delayed.";
-    case "canceled":
+    }
+    case "canceled": {
       return "Unfortunately, this event has been canceled.";
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }

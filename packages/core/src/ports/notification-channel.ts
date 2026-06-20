@@ -18,7 +18,10 @@ export interface NotificationChannel {
 
   /** Deliver a rendered message to a concrete target. Must not throw for
    * expected failures — return `{ ok: false }` so retry policy can apply. */
-  send(message: RenderedMessage, target: DeliveryTarget): Promise<DeliveryResult>;
+  send(
+    message: RenderedMessage,
+    target: DeliveryTarget,
+  ): Promise<DeliveryResult>;
 
   /** Optional readiness probe (e.g. token present). Defaults to ready. */
   healthCheck?(): Promise<boolean>;

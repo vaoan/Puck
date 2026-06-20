@@ -70,18 +70,21 @@ function makeDeps(
   };
 
   const calls = {
-    markSent: vi.fn(async () => undefined),
-    markFailed: vi.fn(async () => undefined),
-    bumpAttempts: vi.fn(async () => undefined),
-    markSkipped: vi.fn(async () => undefined),
-    recordAttempt: vi.fn(async () => undefined),
+    markSent: vi.fn(async () => {}),
+    markFailed: vi.fn(async () => {}),
+    bumpAttempts: vi.fn(async () => {}),
+    markSkipped: vi.fn(async () => {}),
+    recordAttempt: vi.fn(async () => {}),
     send: channel.send as ReturnType<typeof vi.fn>,
   };
 
   const deps: DeliverDeps = {
     notifications: {
       getById: async () => notification,
-      createIfAbsent: async () => pendingNotification(),
+      createIfAbsent: async () => ({
+        notification: pendingNotification(),
+        created: true,
+      }),
       markSent: calls.markSent,
       markFailed: calls.markFailed,
       bumpAttempts: calls.bumpAttempts,

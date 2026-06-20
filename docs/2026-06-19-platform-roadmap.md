@@ -28,12 +28,12 @@ to **Telegram and email**.
 
 ## Sub-projects (dependency order)
 
-| # | Sub-project | Scope | Depends on |
-|---|-------------|-------|------------|
-| **1** | **Foundation: identity + RBAC + core domain** | Supabase Auth (social login, like CandyStore), users, event/session schema (with recurrence-ready occurrences), and the owner/delegate permission model + override rules (enforced via RLS) | — |
-| **2** | **Authoring web app** | Next.js admin mirroring the sisters: create/edit events & sessions, per-day view, recurrence, document uploads (Supabase Storage), delegate management, moderation | 1 |
-| **3** | **Notification engine** _(scaffolded 2026-06-19)_ | two-level subscriptions (event daily-digest + per-session reminders at 30/15/10/5/start), pgmq + pg_cron scheduling, fan-out, dedupe, Telegram/email delivery | 1, 2 |
-| **4** | **Telegram consumer bot** | discovery (deep-link codes / QR / search), browse schedule, subscribe, set reminder offsets, link Telegram ↔ user | 1, 2, 3 |
+| #     | Sub-project                                       | Scope                                                                                                                                                                                       | Depends on |
+| ----- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **1** | **Foundation: identity + RBAC + core domain**     | Supabase Auth (social login, like CandyStore), users, event/session schema (with recurrence-ready occurrences), and the owner/delegate permission model + override rules (enforced via RLS) | —          |
+| **2** | **Authoring web app**                             | Next.js admin mirroring the sisters: create/edit events & sessions, per-day view, recurrence, document uploads (Supabase Storage), delegate management, moderation                          | 1          |
+| **3** | **Notification engine** _(scaffolded 2026-06-19)_ | two-level subscriptions (event daily-digest + per-session reminders at 30/15/10/5/start), pgmq + pg_cron scheduling, fan-out, dedupe, Telegram/email delivery                               | 1, 2       |
+| **4** | **Telegram consumer bot**                         | discovery (deep-link codes / QR / search), browse schedule, subscribe, set reminder offsets, link Telegram ↔ user                                                                           | 1, 2, 3    |
 
 ## Notes & open tensions
 

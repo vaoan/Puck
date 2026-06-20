@@ -41,12 +41,11 @@ const sub: ChannelSubscription = {
 function makeNotificationRepo(): NotificationRepository {
   const byKey = new Map<string, Notification>();
   return {
-    getById: async (id) =>
-      [...byKey.values()].find((n) => n.id === id) ?? null,
+    getById: async (id) => [...byKey.values()].find((n) => n.id === id) ?? null,
     createIfAbsent: async (input: NewNotification) => {
       const existing = byKey.get(input.dedupeKey);
-      if (existing) return existing;
-      const created: Notification = {
+      if (existing) return { notification: existing, created: false };
+      const notification: Notification = {
         id: `n${byKey.size + 1}`,
         eventChangeId: input.eventChangeId,
         subscriptionId: input.subscriptionId,
@@ -57,14 +56,14 @@ function makeNotificationRepo(): NotificationRepository {
         createdAt: "2026-06-19T00:00:00Z",
         sentAt: null,
       };
-      byKey.set(input.dedupeKey, created);
-      return created;
+      byKey.set(input.dedupeKey, notification);
+      return { notification, created: true };
     },
-    markSent: async () => undefined,
-    markFailed: async () => undefined,
-    bumpAttempts: async () => undefined,
-    markSkipped: async () => undefined,
-    recordAttempt: async () => undefined,
+    markSent: async () => {},
+    markFailed: async () => {},
+    bumpAttempts: async () => {},
+    markSkipped: async () => {},
+    recordAttempt: async () => {},
   };
 }
 
@@ -74,17 +73,22 @@ function makeDeps(notifications: NotificationRepository): {
 } {
   const enqueued: NotificationJob[] = [];
   const queue: Queue<NotificationJob> = {
-    send: async (payload) => void enqueued.push(payload),
+    send: async (payload) => {
+      enqueued.push(payload);
+    },
     read: async () => [],
-    ack: async () => undefined,
-    archive: async () => undefined,
+    ack: async () => {},
+    archive: async () => {},
   };
   return {
     enqueued,
     deps: {
       eventChanges: { getById: async () => change },
       follows: { listFollowersForEvent: async () => [follow] },
-      subscriptions: { listVerifiedForUser: async () => [sub] },
+      subscriptions: {
+        getById: async () => sub,
+        listVerifiedForUser: async () => [sub],
+      },
       notifications,
       queue,
     },

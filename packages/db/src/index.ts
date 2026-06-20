@@ -1,7 +1,4 @@
-export {
-  createServiceClient,
-  type PuckSupabaseClient,
-} from "./client.js";
+export { createServiceClient, type PuckSupabaseClient } from "./client.js";
 export type { Database } from "./database.types.js";
 export {
   createEventRepository,

@@ -16,11 +16,11 @@ Legend: 🔴 blocks MVP · 🟡 important soon · 🟢 later/nice-to-have
 ## 1. Product / UX
 
 - 🔴 **Subscription onboarding & verification.** We store
-  `channel_subscriptions.verified` but have no flow to *create* one:
+  `channel_subscriptions.verified` but have no flow to _create_ one:
   - Telegram: deep-link `t.me/<bot>?start=<token>`; `/start` handler maps the
     chat id to a Puck user and marks it verified.
   - Email: send a verification link, confirm before sending real mail.
-  Without this, nobody can actually receive notifications. **This is the #1 gap.**
+    Without this, nobody can actually receive notifications. **This is the #1 gap.**
 - 🔴 **Where do events come from?** Define the **Janus → Puck integration**: does
   Janus POST event changes to `/internal/event-changes`? Shared `external_id` /
   `source`? This is a product decision that shapes the data flow.
@@ -45,7 +45,7 @@ Legend: 🔴 blocks MVP · 🟡 important soon · 🟢 later/nice-to-have
   richer announcements table may be warranted if they have titles/bodies/links.
 - 🟡 **Upstream dedupe contract.** `schedule_changed`/`location_changed` can
   recur; define how callers compute `dedupe_key` so repeats don't re-notify
-  unintentionally (and intended re-notifies *do* get through).
+  unintentionally (and intended re-notifies _do_ get through).
 - 🟢 **Event sources beyond Janus** (manual, ICS import, other platforms).
 
 ## 3. Reliability / correctness

@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment -- Supabase results are
+   untyped until `pnpm db:types` generates the schema; rows are cast to the row
+   shapes at the mapping boundary below. */
 import type {
   ChannelSubscription,
   DeliveryAttempt,
@@ -12,7 +15,8 @@ import type {
   PuckEvent,
   SubscriptionRepository,
 } from "@puck/core";
-import type { SupabaseClient } from "@supabase/supabase-js";
+
+import type { PuckSupabaseClient } from "../client.js";
 
 /**
  * Supabase-backed implementations of the core repository ports.
@@ -22,8 +26,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * and are the single place that knows about snake_case ↔ camelCase mapping.
  */
 
-// Until generated types land, treat the client structurally.
-type Client = SupabaseClient;
+// Until generated types land, the client is loosely typed (see database.types).
+type Client = PuckSupabaseClient;
 
 interface FollowRow {
   id: string;
@@ -137,7 +141,10 @@ function mapNotification(row: NotificationRow): Notification {
   };
 }
 
-function unwrap<T>(result: { data: T | null; error: { message: string } | null }): T {
+function unwrap<T>(result: {
+  data: T | null;
+  error: { message: string } | null;
+}): T {
   if (result.error) throw new Error(result.error.message);
   if (result.data === null) {
     throw new Error("Expected a row but none was returned");
@@ -167,7 +174,7 @@ export function createFollowRepository(client: Client): FollowRepository {
         .select("*")
         .eq("event_id", eventId);
       if (error) throw new Error(error.message);
-      return ((data ?? []) as FollowRow[]).map(mapFollow);
+      return ((data ?? []) as FollowRow[]).map((row) => mapFollow(row));
     },
   };
 }
@@ -192,7 +199,9 @@ export function createSubscriptionRepository(
         .eq("user_id", userId)
         .eq("verified", true);
       if (error) throw new Error(error.message);
-      return ((data ?? []) as SubscriptionRow[]).map(mapSubscription);
+      return ((data ?? []) as SubscriptionRow[]).map((row) =>
+        mapSubscription(row),
+      );
     },
   };
 }
@@ -228,9 +237,10 @@ export function createNotificationRepository(
     },
 
     async createIfAbsent(input: NewNotification) {
-      // Upsert on the unique dedupe_key, then read back the canonical row.
-      // `ignoreDuplicates` makes a replayed change a no-op insert.
-      const { error: upsertError } = await client
+      // Upsert on the unique dedupe_key. With `ignoreDuplicates`, a replayed
+      // change inserts nothing and `inserted` comes back null — that's how we
+      // know whether this call created the row or merely found an existing one.
+      const { data: inserted, error: upsertError } = await client
         .from("notifications")
         .upsert(
           {
@@ -241,17 +251,27 @@ export function createNotificationRepository(
             status: "pending",
           },
           { onConflict: "dedupe_key", ignoreDuplicates: true },
-        );
+        )
+        .select()
+        .maybeSingle();
       if (upsertError) throw new Error(upsertError.message);
 
-      const row = unwrap(
+      if (inserted) {
+        return {
+          notification: mapNotification(inserted as NotificationRow),
+          created: true,
+        };
+      }
+
+      // Already existed: read back the canonical row.
+      const row = unwrap<NotificationRow>(
         await client
           .from("notifications")
           .select("*")
           .eq("dedupe_key", input.dedupeKey)
           .single(),
       );
-      return mapNotification(row as NotificationRow);
+      return { notification: mapNotification(row), created: false };
     },
 
     async markSent(id, sentAt) {

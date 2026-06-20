@@ -1,11 +1,10 @@
-import type { ChannelKey } from "../domain/channels.js";
+import type { NotificationJob, Queue } from "../ports/queue.js";
 import type {
   EventChangeRepository,
   FollowRepository,
   NotificationRepository,
   SubscriptionRepository,
 } from "../ports/repositories.js";
-import type { NotificationJob, Queue } from "../ports/queue.js";
 
 import { notificationDedupeKey } from "./dedupe.js";
 
@@ -55,18 +54,21 @@ export async function fanOutEventChange(
       const dedupeKey = notificationDedupeKey({
         eventChangeId: change.id,
         subscriptionId: sub.id,
-        channel: sub.channel as ChannelKey,
-      });
-
-      const notification = await deps.notifications.createIfAbsent({
-        eventChangeId: change.id,
-        subscriptionId: sub.id,
         channel: sub.channel,
-        dedupeKey,
       });
 
-      // Only enqueue work we haven't already handled before.
-      if (notification.status === "pending" && notification.attempts === 0) {
+      const { notification, created } = await deps.notifications.createIfAbsent(
+        {
+          eventChangeId: change.id,
+          subscriptionId: sub.id,
+          channel: sub.channel,
+          dedupeKey,
+        },
+      );
+
+      // Only enqueue freshly-created notifications. A replayed change finds the
+      // existing row (created=false) and is skipped, so it never re-sends.
+      if (created) {
         result.created += 1;
         await deps.queue.send({ notificationId: notification.id });
         result.enqueued += 1;

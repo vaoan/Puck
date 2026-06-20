@@ -62,37 +62,43 @@ Granularity is by **blast radius** so a role can hold a low-risk capability
 without the dangerous ones.
 
 **Platform**
+
 - `platform.admin` — absolute admin (assigns event owners, manages permissions,
   moderates anything)
 - `events.create` — admin-granted gate to become an event owner
 - `audit.read` — read the audit trail (see §5)
 
 **Consumer defaults** (auto-granted on signup)
+
 - `event.read`, `session.read`, `content.read` (browse + download published
   files), `subscriptions.manage` (used by #3/#4)
 
 **Event — core** (owner implicit; grantable to event delegates)
-- `event.edit_details` *(low risk: title/description/branding/venue)*
-- `event.edit_schedule` *(high: event date range + timezone — moves reminders)*
-- `event.manage_visibility` *(high: public/private + regenerate event code/QR)*
-- `event.manage_lifecycle` *(high: draft/publish/unpublish/archive)*
-- `event.cancel` *(severe: fires cancellation notices to all subscribers)*
-- `event.broadcast` *(severe: announcement push to all subscribers)*
-- `event.manage_delegates` *(severe: privilege escalation)*
-- `event.manage_session_owners` *(high: controls who runs the programme)*
-- `event.moderate_sessions` *(high: override into any session below)*
-- `event.delete` *(severe: destroys data)*
+
+- `event.edit_details` _(low risk: title/description/branding/venue)_
+- `event.edit_schedule` _(high: event date range + timezone — moves reminders)_
+- `event.manage_visibility` _(high: public/private + regenerate event code/QR)_
+- `event.manage_lifecycle` _(high: draft/publish/unpublish/archive)_
+- `event.cancel` _(severe: fires cancellation notices to all subscribers)_
+- `event.broadcast` _(severe: announcement push to all subscribers)_
+- `event.manage_delegates` _(severe: privilege escalation)_
+- `event.manage_session_owners` _(high: controls who runs the programme)_
+- `event.moderate_sessions` _(high: override into any session below)_
+- `event.delete` _(severe: destroys data)_
 
 **Event — support content/files** (independent of core editing)
+
 - `event_content.create` (upload), `event_content.update` (replace/rename),
   `event_content.delete` — act on **any** file in the event's space
 
 **Session — core** (owner implicit; grantable to session delegates)
+
 - `session.create`, `session.edit_details`,
-  `session.edit_schedule` *(its delicate field — drives reminders)*,
+  `session.edit_schedule` _(its delicate field — drives reminders)_,
   `session.delete`, `session.manage_delegates`
 
 **Session — support content/files**
+
 - `session_content.create`, `session_content.update`, `session_content.delete`
 
 ### 2.3 Quick-assign templates (4)
@@ -101,12 +107,12 @@ The granular keys remain individually assignable (custom). On top, **4 presets**
 pre-fill the `permissions[]` array (editable after). The 3 "nuclear" keys
 (`event.delete`, `event.cancel`, `event.manage_delegates`) are never in a preset.
 
-| Template (event scope) | Bundled keys |
-|---|---|
-| **Co-organizer** | all `event.*` + `event_content.*` except `delete`, `cancel`, `manage_delegates` |
-| **Programme manager** | `event.edit_schedule`, `manage_session_owners`, `moderate_sessions`, `session_content.*` |
-| **Designer** | `event_content.*` (+ `session_content.*`) — support-content steward |
-| **Communications manager** | `event.broadcast` (+ read) |
+| Template (event scope)     | Bundled keys                                                                             |
+| -------------------------- | ---------------------------------------------------------------------------------------- |
+| **Co-organizer**           | all `event.*` + `event_content.*` except `delete`, `cancel`, `manage_delegates`          |
+| **Programme manager**      | `event.edit_schedule`, `manage_session_owners`, `moderate_sessions`, `session_content.*` |
+| **Designer**               | `event_content.*` (+ `session_content.*`) — support-content steward                      |
+| **Communications manager** | `event.broadcast` (+ read)                                                               |
 
 Sessions reuse this minimally: a **Session delegate** preset (full `session.*` +
 `session_content.*`) and reuse of **Designer** for content-only. Templates are
@@ -116,6 +122,7 @@ editable later.
 
 When an event actor (owner, or delegate with `event.moderate_sessions` /
 `event.manage_session_owners`) revokes a session owner:
+
 1. Removing the `event_session_owners` row nulls `owner_id` on that user's
    sessions in the event.
 2. A trigger on `sessions` (when `owner_id` becomes NULL) deletes that session's
@@ -175,6 +182,7 @@ Most granular keys align to **table boundaries**, so RLS is clean; the few
 sub-row severe actions are explicit RPCs.
 
 **Waterfall helper functions** (SECURITY DEFINER) — the cascade lives here:
+
 - `can_edit_event(event_id, key)` = `platform.admin` OR owner OR
   event-delegate holds `key`.
 - `can_act_on_session(session_id, key)` = `platform.admin` OR session owner OR
@@ -183,23 +191,24 @@ sub-row severe actions are explicit RPCs.
 
 **RLS policies** (RLS enabled on every table; service role bypasses):
 
-| Resource / op | Gate |
-|---|---|
-| `events` SELECT | published+public, OR any event authority, OR admin |
-| `events` INSERT | `has_global_permission(uid,'events.create')` AND `owner_id = uid` |
-| `events` UPDATE (detail fields) | `can_edit_event(id,'event.edit_details')` |
-| `sessions` writes | `can_act_on_session(id, 'session.*')` per op |
-| `session_occurrences` writes | `can_act_on_session(session_id,'session.edit_schedule')` |
-| `documents` writes | `can_edit_event`/`can_act_on_session` with `*_content.*` |
-| `documents` SELECT | `is_published` (public) OR authority |
-| delegation tables | owner / `*.manage_delegates` / `manage_session_owners` |
+| Resource / op                   | Gate                                                              |
+| ------------------------------- | ----------------------------------------------------------------- |
+| `events` SELECT                 | published+public, OR any event authority, OR admin                |
+| `events` INSERT                 | `has_global_permission(uid,'events.create')` AND `owner_id = uid` |
+| `events` UPDATE (detail fields) | `can_edit_event(id,'event.edit_details')`                         |
+| `sessions` writes               | `can_act_on_session(id, 'session.*')` per op                      |
+| `session_occurrences` writes    | `can_act_on_session(session_id,'session.edit_schedule')`          |
+| `documents` writes              | `can_edit_event`/`can_act_on_session` with `*_content.*`          |
+| `documents` SELECT              | `is_published` (public) OR authority                              |
+| delegation tables               | owner / `*.manage_delegates` / `manage_session_owners`            |
 
 **Severe, sub-row actions = `SECURITY DEFINER` RPCs**, each checking its key:
+
 - `cancel_event(id)` → `event.cancel`
 - `publish_event(id)` / `set_event_visibility(id, …)` →
   `event.manage_lifecycle` / `event.manage_visibility`
 - `broadcast_announcement(event_id, …)` → `event.broadcast`
-(These also become the natural hook points for #3's notifications.)
+  (These also become the natural hook points for #3's notifications.)
 
 ## 5. Auditing (deep, immutable — mirrors CandyStore)
 
@@ -252,6 +261,7 @@ redundancy.
 ## 8. Implementation outline (for the plan)
 
 Migrations (new Supabase project, in order):
+
 1. `user_profiles` + `auth.users` sync trigger (copy/adapt CandyStore).
 2. `permissions` catalog + seed the ~29 keys; `user_permissions` +
    `has_global_permission()` (copy/adapt).

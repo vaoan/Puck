@@ -9,7 +9,7 @@ import type { ApiContext } from "../context.js";
 const INTERNAL_KEY_HEADER = "x-puck-internal-key";
 
 const changeBody = z.object({
-  eventId: z.string().uuid(),
+  eventId: z.uuid(),
   type: z.enum(EVENT_CHANGE_TYPES),
   dedupeKey: z.string().min(1),
   payload: z
@@ -41,7 +41,7 @@ export function registerEventChangeRoutes(
 
     const parsed = changeBody.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: z.flattenError(parsed.error) });
     }
     const input = parsed.data;
 
@@ -74,6 +74,7 @@ function isAuthorized(request: FastifyRequest, ctx: ApiContext): boolean {
   const expected = ctx.env.INTERNAL_API_KEY;
   if (!expected) return false;
 
+  // eslint-disable-next-line security/detect-object-injection -- constant header name, not user input
   const provided = request.headers[INTERNAL_KEY_HEADER];
   if (typeof provided !== "string") return false;
 

@@ -14,7 +14,11 @@ export type PuckSupabaseClient = SupabaseClient<Database>;
  */
 export function createServiceClient(): PuckSupabaseClient {
   const env = loadEnv();
-  return createClient<Database>(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  return createClient<Database>(
+    env.SUPABASE_URL,
+    env.SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: { persistSession: false, autoRefreshToken: false },
+    },
+  );
 }

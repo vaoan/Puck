@@ -17,6 +17,6 @@ describe("createChannelRegistry", () => {
 
   it("throws when requiring an unregistered channel", () => {
     const registry = createChannelRegistry([]);
-    expect(() => registry.require("email")).toThrowError(/email/);
+    expect(() => registry.require("email")).toThrow(/email/);
   });
 });
