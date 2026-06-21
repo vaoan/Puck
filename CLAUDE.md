@@ -5,43 +5,84 @@ code in this repository.
 
 ## Project
 
-**Puck** is a fast, lightweight event-following and notification platform.
-Users follow events and receive notifications (Telegram, email, and more later)
-when something important changes — start/delay/cancel, location or schedule
-changes, organizer announcements, ticket/check-in updates, and other meaningful
-status changes. See `README.md` for the architecture overview.
+**Puck** is a standalone, multi-tenant **event-scheduler + notification
+platform**. Puck owns _everything_ about event scheduling — there is no upstream
+feed; organizers author their own data inside Puck.
+
+Organizers create umbrella **events** (multi-day festivals/conferences)
+containing a flat schedule of **sessions** (each with a start time; sessions may
+**recur**). Authoring is governed by a **CandyStore-style permission system**
+(owners + delegates, not a single admin). End users discover events and
+subscribe at two levels — to a **whole event** (a **daily digest** of that day's
+schedule) and/or to **individual sessions** (reminders at configurable lead
+times: 30 / 15 / 10 / 5 min before, and at start). Notifications go out over
+**Telegram** and **email**, with more channels designed to drop in later.
+
+See `README.md` for the product overview and `docs/2026-06-19-platform-roadmap.md`
+for the decomposition.
+
+## Current state — planning, not built
+
+> ⚠️ **Nothing is implemented yet. This repo currently holds _ideas + tooling
+> only_** — design docs, the monorepo toolchain, and config. The earlier
+> notification-engine scaffold was intentionally removed because it modeled an
+> outdated data model. **Do not assume any `apps/*` or `packages/*` exist** until
+> a sub-project is actually built.
+
+Puck is decomposed into four sub-projects, built in dependency order **1 → 2 → 3
+→ 4**:
+
+| #     | Sub-project                               | Scope                                                                                               | Status                            |
+| ----- | ----------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **1** | **Foundation** — identity + RBAC + domain | Supabase Auth, users, event/session/occurrence schema, owner/delegate permissions, RLS, audit       | spec + 14-task plan, ⏳ not built |
+| **2** | **Authoring web app** (`apps/web`)        | Next.js admin: create/edit events & sessions, per-day view, recurrence, document uploads, delegates | no spec yet                       |
+| **3** | **Notification engine**                   | two-level subscriptions, pgmq + pg_cron scheduling, fan-out, dedupe, Telegram/email delivery        | needs re-grounding on #1          |
+| **4** | **Telegram consumer bot**                 | discovery, browse schedule, subscribe, set reminder offsets, link Telegram ↔ user                   | no spec yet                       |
+
+The foundation (#1) spec and plan live in `docs/superpowers/specs/` and
+`docs/superpowers/plans/`. Read them before implementing #1.
 
 ## References
 
 **Sister projects: `Z:\Github\candystore` and `Z:\Github\Janus`.** Puck shares
 their _toolchain and conventions_ — pnpm + Turbo monorepo, strict TypeScript,
 ESLint (flat config) + Prettier, Vitest, Husky, secretlint/cspell, the
-`.env` + `.secrets` discipline, kebab-case filenames, and CI/CD style. Consult
-them for tooling decisions and follow the same approach unless noted below.
+`.env` + `.secrets` discipline, kebab-case filenames, Supabase (Auth + RLS +
+Storage), social login, and CI/CD style. Consult them for tooling decisions and
+follow the same approach unless noted below.
 
-**Puck deliberately diverges from the sisters in _runtime architecture_:** it is
-a backend service (Fastify API + Node worker + Supabase), not a Next.js
-frontend. Do **not** copy in Next.js/React/shadcn/Orval setup.
+Like the sisters, Puck **does** have a Next.js web app (sub-project #2). Unlike
+them, Puck **also** runs backend services — a Fastify API and a Node worker — for
+the notification engine. Mirror CandyStore/Janus for the web app; the backend
+services are Puck's own addition.
 
 > ⚠️ **CandyStore is in production. Never run anything against its database.**
 > Puck has its own separate Supabase project. Never put CandyStore credentials
 > in Puck's `.env`/`.secrets`, and never point `SUPABASE_URL` at it.
 
-## Architecture rules
+## Architecture rules (target design)
 
-- **Clean / hexagonal layering.** `@puck/core` owns the domain model and
-  **ports** (interfaces). `@puck/db`, `@puck/queue`, `@puck/channels` are
-  **adapters** implementing those ports. `apps/*` wire adapters to ports.
+_These describe the architecture to build toward; no code implements them yet._
+
+- **Clean / hexagonal layering.** A `@puck/core` package owns the domain model
+  and **ports** (interfaces). Adapters (`@puck/db`, `@puck/queue`,
+  `@puck/channels`, …) implement those ports. `apps/*` wire adapters to ports.
   Dependencies point inward — `core` imports no concrete SDK.
+- **Permissions are first-class.** Authoring is governed by the owner/delegate
+  RBAC model, enforced via Supabase RLS — not application-only checks. See the
+  foundation spec for the permission keys and override rules.
 - **Channels are swappable.** A new channel (Discord, SMS, push, WhatsApp) is
-  added by implementing `NotificationChannel` and registering it — never by
-  editing core or the worker. See the README's "Adding a new channel".
+  added by implementing the `NotificationChannel` port and registering it — never
+  by editing core or the worker.
 - **The queue is swappable too.** The default is `pgmq` (in Supabase Postgres,
   zero extra infra). Anything depending on a queue uses the `Queue` port.
-- **Idempotency is sacred.** Every notification has a deterministic
-  `dedupe_key` (`eventChangeId:subscriptionId:channel`) with a UNIQUE
-  constraint. Never weaken this — it is the no-duplicate-sends guarantee.
-- **Outbox pattern.** Event changes are persisted; a DB trigger enqueues
+- **Idempotency is sacred.** Every notification carries a deterministic
+  `dedupe_key` with a UNIQUE constraint — the no-duplicate-sends guarantee. With
+  two-level subscriptions the key is per (trigger, subscription, channel): a
+  session reminder keys on occurrence + offset; a daily digest keys on event +
+  date. The exact contract lands with sub-project #3's re-grounded design.
+  Never weaken it.
+- **Outbox pattern.** Schedule changes are persisted; a DB trigger enqueues
   fan-out in the same transaction. Don't fan out synchronously in request
   handlers.
 - **Fail-safe over fast.** Prefer "retry later" to "drop". Classify channel
@@ -70,17 +111,18 @@ pnpm test               # vitest
 pnpm lint / pnpm format # eslint / prettier
 pnpm db:start           # local Supabase (Postgres + pgmq + pg_cron)
 pnpm db:reset           # apply supabase/migrations
-pnpm db:types           # regenerate packages/db/src/database.types.ts
+pnpm db:types           # regenerate generated Supabase types
 ```
 
-Run a single package: `pnpm --filter @puck/core test`.
+> Note: `dev`/`typecheck`/`test` are no-ops until the first sub-project adds
+> packages — that's expected at this planning stage.
 
 ## Definition of done for a change
 
 1. `pnpm typecheck` clean.
 2. `pnpm test` green (add/adjust tests for new logic).
 3. `pnpm lint` and `pnpm format:check` clean.
-4. New env vars added to `.env.example`, validated in `@puck/config`, and
-   documented in the README.
+4. New env vars added to `.env.example`, validated in config, and documented in
+   the README.
 5. Schema changes are a new `supabase/migrations/*.sql` file (never edit an
    applied migration), and `pnpm db:types` is re-run.
