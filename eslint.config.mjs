@@ -300,6 +300,8 @@ const eslintConfig = defineConfig([
     files: [
       `${APP_SRC}/**/*.test.{ts,tsx,js,jsx}`,
       `${APP_SRC}/**/*.spec.{ts,tsx,js,jsx}`,
+      `${PKG_SRC}/**/*.test.{ts,tsx,js,jsx}`,
+      `${PKG_SRC}/**/*.spec.{ts,tsx,js,jsx}`,
     ],
     ...vitest.configs.recommended,
     rules: {
@@ -314,6 +316,8 @@ const eslintConfig = defineConfig([
     files: [
       `${APP_SRC}/**/*.test.{ts,tsx,js,jsx}`,
       `${APP_SRC}/**/*.spec.{ts,tsx,js,jsx}`,
+      `${PKG_SRC}/**/*.test.{ts,tsx,js,jsx}`,
+      `${PKG_SRC}/**/*.spec.{ts,tsx,js,jsx}`,
     ],
     ...vitest.configs.env,
   },
@@ -363,11 +367,6 @@ const eslintConfig = defineConfig([
           pathGroups: [
             {
               pattern: "@/**",
-              group: "internal",
-              position: "after",
-            },
-            {
-              pattern: "@shared/**",
               group: "internal",
               position: "after",
             },
@@ -671,19 +670,6 @@ const eslintConfig = defineConfig([
       "**/*.spec.*",
       "**/test/**",
       "**/mocks/**",
-      "**/infrastructure/transformers/mockDataTransformer.*",
-      "**/shared/domain/types/generated/**",
-      "**/shared/infrastructure/api/generated/**",
-      "**/shared/infrastructure/api/orval-mutator.ts",
-      "**/shared/infrastructure/config/environment.ts",
-      "**/shared/application/utils/logger.ts",
-      "**/shared/application/utils/export.ts",
-      "**/shared/application/utils/exportUtils.ts",
-      "**/shared/presentation/theme/chartColors.ts",
-      "**/shared/presentation/components/ui/sparkline.tsx",
-      "**/shared/infrastructure/providers/MSWProvider.tsx",
-      "**/application/utils/transformers.ts",
-      "**/application/mappers/**",
     ],
     rules: {
       "i18next/no-literal-string": [
