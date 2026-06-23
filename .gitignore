@@ -17,6 +17,9 @@ playwright-report/
 .env
 .env.*
 !.env.example
+!.env.dev
+!.env.ci
+!.env.prod
 .secrets
 !.secrets.example
 *.local
