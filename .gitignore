@@ -43,3 +43,4 @@ pnpm-debug.log*
 
 # Claude/AI local files
 .claude/tools/.env.local
+!.claude/tools/.env.local.example

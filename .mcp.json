@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "shadcn": { "command": "npx", "args": ["shadcn@latest", "mcp"] },
+    "next-devtools": { "command": "npx", "args": ["next-devtools-mcp@latest"] },
+    "playwright": { "command": "npx", "args": ["@playwright/mcp@latest"] },
+    "github": {
+      "command": "node",
+      "args": [".claude/tools/github-unified-mcp.mjs"]
+    },
+    "git": { "command": "node", "args": [".claude/tools/git-mcp.mjs"] },
+    "linear": "disabled",
+    "slack": "disabled",
+    "vercel": "disabled",
+    "logrocket": "disabled",
+    "github-setup": "disabled"
+  }
+}
