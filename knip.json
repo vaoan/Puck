@@ -4,5 +4,11 @@
     ".": { "entry": ["scripts/*.mjs"], "project": ["scripts/**/*.mjs"] }
   },
   "ignore": ["**/generated/**", "**/*.config.*"],
-  "ignoreDependencies": []
+  "ignoreDependencies": [
+    "eslint-config-next",
+    "eslint-plugin-jsx-a11y",
+    "@secretlint/secretlint-rule-preset-recommend",
+    "tsx"
+  ],
+  "ignoreBinaries": ["gh"]
 }

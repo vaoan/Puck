@@ -604,7 +604,7 @@ const TOOLS = [
       properties: {
         id: {
           type: "string",
-          description: "Issue ID or identifier (e.g., 'CLA-1234')",
+          description: "Issue ID or identifier (e.g., 'PROJ-1234')",
         },
         outputDir: {
           type: "string",
@@ -624,7 +624,7 @@ const TOOLS = [
       properties: {
         issueId: {
           type: "string",
-          description: "Issue ID or identifier (e.g., 'CLA-1234')",
+          description: "Issue ID or identifier (e.g., 'PROJ-1234')",
         },
         outputDir: {
           type: "string",
@@ -666,7 +666,7 @@ const TOOLS = [
       properties: {
         issueId: {
           type: "string",
-          description: "Issue ID or identifier (e.g., 'CLA-1234')",
+          description: "Issue ID or identifier (e.g., 'PROJ-1234')",
         },
         body: {
           type: "string",
@@ -694,7 +694,7 @@ const TOOLS = [
       properties: {
         issueId: {
           type: "string",
-          description: "Issue ID or identifier (e.g., 'CLA-1234') to favorite",
+          description: "Issue ID or identifier (e.g., 'PROJ-1234') to favorite",
         },
       },
       required: ["issueId"],
