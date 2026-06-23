@@ -13,17 +13,24 @@ INTERVAL=720  # 12 minutes
 
 # port:path pairs — one representative route per HTTP app
 # fill per app when it lands:
-#   5000:/     → apps/web (Next.js)
+#   5000:/       → apps/web (Next.js)
 #   5001:/health → apps/api (Fastify — health endpoint)
 APPS="
-5000:/
+# 5000:/   fill per app when it lands
 "
 
 log() { printf '[WARMER] %s %s\n' "$(date -u '+%H:%M:%S')" "$*"; }
 
+# No-op when no apps are configured yet (all lines are comments or blank)
+_active_apps=$(printf '%s\n' "$APPS" | grep -v '^\s*#' | grep -v '^\s*$' || true)
+if [ -z "$_active_apps" ]; then
+  log "No apps configured — warmer is a no-op until apps land. Exiting."
+  exit 0
+fi
+
 # Wait until every app's TCP port accepts connections
 log "Waiting for all services to be ready..."
-for entry in $APPS; do
+for entry in $_active_apps; do
   port="${entry%%:*}"
   until nc -z 127.0.0.1 "$port" 2>/dev/null; do sleep 2; done
   log "  port ${port} ready"
@@ -31,7 +38,7 @@ done
 log "All services ready — starting warm-up loop (every ${INTERVAL}s)."
 
 warm() {
-  for entry in $APPS; do
+  for entry in $_active_apps; do
     port="${entry%%:*}"
     path="${entry#*:}"
     url="http://127.0.0.1:${port}${path}"
