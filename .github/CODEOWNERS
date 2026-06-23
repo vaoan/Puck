@@ -1,0 +1,5 @@
+# CODEOWNERS
+# Global owner — all files require review from @vaoan.
+# Add more specific paths below as the codebase grows, e.g.:
+#   apps/web/   @vaoan @another-reviewer
+* @vaoan

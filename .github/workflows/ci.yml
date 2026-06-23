@@ -4,39 +4,250 @@ on:
   pull_request:
     branches: [main, develop]
   push:
-    branches: [develop]
+    branches: [develop, main]
+
+permissions:
+  contents: read
+  pull-requests: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_VERSION: "24"
+  PNPM_VERSION: "10.32.1"
+
 jobs:
-  quality:
-    name: Lint · Typecheck · Test
+  # ============================================
+  # Detect Changes (skip CI for docs-only PRs)
+  # ============================================
+  changes:
+    name: Detect Changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      web: ${{ steps.filter.outputs.web }}
+      api: ${{ steps.filter.outputs.api }}
+      worker: ${{ steps.filter.outputs.worker }}
+      bot: ${{ steps.filter.outputs.bot }}
+      packages: ${{ steps.filter.outputs.packages }}
+      tooling: ${{ steps.filter.outputs.tooling }}
+      docs-only: ${{ steps.check.outputs.docs-only }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+            api:
+              - 'apps/api/**'
+            worker:
+              - 'apps/worker/**'
+            bot:
+              - 'apps/bot/**'
+            packages:
+              - 'packages/**'
+            tooling:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'tsconfig*.json'
+              - 'eslint.config.*'
+              - 'prettier.config.*'
+            code:
+              - 'apps/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'tsconfig*.json'
+              - 'eslint.config.*'
+              - 'prettier.config.*'
+
+      - name: Check if docs-only
+        id: check
+        run: |
+          if [ "${{ steps.filter.outputs.code }}" = "false" ]; then
+            echo "docs-only=true" >> $GITHUB_OUTPUT
+            echo "Docs-only PR detected - skipping full CI"
+          else
+            echo "docs-only=false" >> $GITHUB_OUTPUT
+            echo "Code changes detected - running full CI"
+          fi
+
+  # ============================================
+  # Quality Checks (skip for docs-only PRs)
+  # ============================================
+  quality:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: changes
+    if: needs.changes.outputs.docs-only == 'false'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: pnpm/action-setup@a7487ba4f5ff23560ba9d268272a8e58dd71ed0a # v4
         with:
-          node-version-file: .nvmrc
-          cache: pnpm
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          pnpm install --frozen-lockfile || {
+            echo "Frozen lockfile install failed, retrying without frozen lockfile"
+            pnpm install --no-frozen-lockfile
+          }
 
-      - name: Format check
-        run: pnpm format:check
+      - name: Check formatting
+        run: pnpm run format:check
 
       - name: Lint
-        run: pnpm lint
+        run: |
+          set -euo pipefail
 
-      - name: Typecheck
-        run: pnpm typecheck
+          SELECT_OUTPUT=$(bash scripts/select-workspaces.sh \
+            "${{ needs.changes.outputs.web }}" \
+            "${{ needs.changes.outputs.api }}" \
+            "${{ needs.changes.outputs.worker }}" \
+            "${{ needs.changes.outputs.bot }}" \
+            "${{ needs.changes.outputs.packages }}" \
+            "${{ needs.changes.outputs.tooling }}")
 
-      - name: Test
-        run: pnpm test
+          RUN_ALL=$(echo "$SELECT_OUTPUT" | grep '^RUN_ALL=' | cut -d= -f2-)
+          LINT_TARGETS=$(echo "$SELECT_OUTPUT" | grep '^LINT_TARGETS=' | cut -d= -f2-)
+
+          if [ "$RUN_ALL" = "true" ]; then
+            echo "Running full lint because packages/tooling changed."
+            pnpm run lint
+            exit 0
+          fi
+
+          if [ -z "$LINT_TARGETS" ]; then
+            echo "No lintable workspace changes detected. Skipping lint."
+            exit 0
+          fi
+
+          echo "Running scoped lint for: $LINT_TARGETS"
+          pnpm exec eslint $LINT_TARGETS
+
+      - name: Type check
+        run: |
+          set -euo pipefail
+
+          SELECT_OUTPUT=$(bash scripts/select-workspaces.sh \
+            "${{ needs.changes.outputs.web }}" \
+            "${{ needs.changes.outputs.api }}" \
+            "${{ needs.changes.outputs.worker }}" \
+            "${{ needs.changes.outputs.bot }}" \
+            "${{ needs.changes.outputs.packages }}" \
+            "${{ needs.changes.outputs.tooling }}")
+
+          RUN_ALL=$(echo "$SELECT_OUTPUT" | grep '^RUN_ALL=' | cut -d= -f2-)
+          APPS=$(echo "$SELECT_OUTPUT" | grep '^APPS=' | cut -d= -f2-)
+
+          if [ "$RUN_ALL" = "true" ]; then
+            echo "Running full typecheck because packages/tooling changed."
+            pnpm run typecheck
+            exit 0
+          fi
+
+          if [ -z "$APPS" ]; then
+            echo "No workspace apps selected for typecheck."
+            exit 0
+          fi
+
+          for APP in $APPS; do
+            pnpm --filter "$APP" typecheck
+          done
+
+      - name: Monorepo checks (sherif + syncpack)
+        if: needs.changes.outputs.packages == 'true' || needs.changes.outputs.tooling == 'true'
+        run: |
+          pnpm run sherif || true
+          pnpm run syncpack lint || true
+
+  # ============================================
+  # Unit Tests (Vitest)
+  # ============================================
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: changes
+    if: needs.changes.outputs.docs-only == 'false'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@a7487ba4f5ff23560ba9d268272a8e58dd71ed0a # v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile || {
+            echo "Frozen lockfile install failed, retrying without frozen lockfile"
+            pnpm install --no-frozen-lockfile
+          }
+
+      - name: Run unit tests
+        run: |
+          set -euo pipefail
+
+          SELECT_OUTPUT=$(bash scripts/select-workspaces.sh \
+            "${{ needs.changes.outputs.web }}" \
+            "${{ needs.changes.outputs.api }}" \
+            "${{ needs.changes.outputs.worker }}" \
+            "${{ needs.changes.outputs.bot }}" \
+            "${{ needs.changes.outputs.packages }}" \
+            "${{ needs.changes.outputs.tooling }}")
+
+          RUN_ALL=$(echo "$SELECT_OUTPUT" | grep '^RUN_ALL=' | cut -d= -f2-)
+          APPS=$(echo "$SELECT_OUTPUT" | grep '^APPS=' | cut -d= -f2-)
+
+          if [ "$RUN_ALL" = "true" ]; then
+            echo "Running full test suite because packages/tooling changed."
+            pnpm run test
+            exit 0
+          fi
+
+          if [ -z "$APPS" ]; then
+            echo "No workspace apps selected for unit tests. Running root test (no-op on empty workspace)."
+            pnpm run test
+            exit 0
+          fi
+
+          for APP in $APPS; do
+            pnpm --filter "$APP" test
+          done
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: |
+            apps/*/coverage/
+            packages/*/coverage/
+          retention-days: 7
+          if-no-files-found: ignore

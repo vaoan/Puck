@@ -1,0 +1,61 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for Puck.
+title: "feat: "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for Puck? We'd love to hear it. Please be as specific as possible.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem does this feature solve? Who is affected?
+      placeholder: "As an organizer, I want to... so that..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the feature or change you'd like to see.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Are there other approaches? Why do you prefer the proposed one?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      description: Which part of Puck does this touch?
+      options:
+        - Web app (authoring UI)
+        - API server
+        - Notification worker
+        - Telegram bot
+        - Shared packages / core domain
+        - Database / schema
+        - CI/CD / tooling
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and this has not been requested before.
+          required: true
