@@ -1,6 +1,5 @@
 {
   "$schema": "https://unpkg.com/syncpack@14.3.1/dist/schema.json",
-  "dependencyTypes": ["prod", "dev", "peer"],
   "semverGroups": [
     {
       "range": "^",

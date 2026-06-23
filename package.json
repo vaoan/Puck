@@ -2,7 +2,7 @@
   "name": "puck",
   "version": "2026.06.19.1",
   "private": true,
-  "description": "Puck — a fast, lightweight event-following and notification platform.",
+  "description": "Puck — a fast, lightweight event-scheduler and notification platform.",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.32.1",
@@ -10,40 +10,63 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "turbo run build",
     "dev": "turbo run dev",
+    "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:watch": "vitest",
     "test:coverage": "turbo run test:coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "check:tools": "syncpack lint && cspell \"**/*.{ts,md,json}\" --no-progress",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "check:tools": "cspell \"**/*.{ts,tsx,md,json}\" --no-progress && ls-lint && syncpack lint && sherif",
+    "check:style": "stylelint \"apps/*/src/**/*.css\" \"packages/*/src/**/*.css\"",
+    "codegen": "orval --config orval.config.ts",
+    "codegen:supabase": "supabase gen types typescript --local > packages/db/src/database.types.ts",
+    "codegen:all": "pnpm codegen && pnpm codegen:supabase",
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "db:diff": "supabase db diff",
     "db:types": "supabase gen types typescript --local > packages/db/src/database.types.ts",
+    "sync-secrets": "node scripts/sync-secrets.mjs",
     "prepare": "husky"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@ls-lint/ls-lint": "^2.3.1",
+    "@secretlint/secretlint-rule-preset-recommend": "^12.3.1",
+    "@tanstack/eslint-plugin-query": "^5.100.5",
     "@types/node": "^24.0.0",
     "@vitest/coverage-v8": "^4.1.5",
     "@vitest/eslint-plugin": "^1.6.16",
     "cspell": "^10.0.0",
     "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.4",
     "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-better-tailwindcss": "^4.4.1",
+    "eslint-plugin-boundaries": "^6.0.2",
+    "eslint-plugin-i18next": "^6.1.4",
     "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-security": "^4.0.0",
     "eslint-plugin-sonarjs": "^4.0.3",
+    "eslint-plugin-testing-library": "^7.16.2",
     "eslint-plugin-unicorn": "^64.0.0",
     "eslint-plugin-unused-imports": "^4.4.1",
     "husky": "^9.1.7",
+    "jscpd": "^4.0.9",
+    "knip": "^6.7.0",
     "lint-staged": "^16.4.0",
+    "madge": "^8.0.0",
+    "orval": "^8.9.0",
     "prettier": "^3.8.3",
     "secretlint": "^12.3.1",
-    "@secretlint/secretlint-rule-preset-recommend": "^12.3.1",
+    "sherif": "^1.11.1",
+    "stylelint": "^17.9.1",
+    "stylelint-config-standard": "^40.0.0",
+    "stylelint-config-tailwindcss": "^1.0.1",
     "supabase": "^2.0.0",
     "syncpack": "^14.3.1",
     "tsx": "^4.20.0",
@@ -53,13 +76,28 @@
     "vitest": "^4.1.5"
   },
   "lint-staged": {
-    "*.{ts,js,mjs}": [
+    "*.{ts,tsx,js,jsx}": [
       "prettier --check",
-      "eslint --max-warnings=0 --no-warn-ignored",
+      "eslint --no-warn-ignored --max-warnings=0",
       "secretlint"
     ],
-    "*.{json,md}": [
+    "*.{json,md,css}": [
       "prettier --check"
+    ]
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": ">=7.3.2",
+      "uuid": ">=14.0.0",
+      "postcss": "^8.5.12"
+    },
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@swc/core",
+      "esbuild",
+      "msw",
+      "supabase",
+      "unrs-resolver"
     ]
   }
 }
