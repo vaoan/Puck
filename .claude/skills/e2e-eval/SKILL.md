@@ -30,22 +30,22 @@ Run e2e dev --fix
 
 ## Parameters
 
-| Parameter      | Values                                              | Default            | Description                                                                                                                                                                                                          |
-| -------------- | --------------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `env`          | `dev` \| `staging`                                  | `dev`              | Target environment                                                                                                                                                                                                   |
-| `--headed`     | flag                                                | off (headless)     | Show the browser window during tests. Mutually exclusive with `--ci`.                                                                                                                                                |
-| `--ui`         | flag                                                | off                | Open Playwright UI mode after infra setup; skips analysis/report phases. Requires `--app <single>`. Mutually exclusive with `--fix`, `--retries`, `--replay`, `--ci`.                                                |
-| `--debug`      | spec path                                           | (none)             | Open Playwright inspector after infra setup; requires a spec path. Skips analysis/report phases. Requires `--app <single>`. Mutually exclusive with `--fix`, `--retries`, `--replay`, `--ui`, `--ci`.                |
-| `--app`        | `auth` \| `admin` \| `store` \| `payments` \| `all` | `all`              | Which app suite(s) to run                                                                                                                                                                                            |
-| `--fix`        | flag                                                | off                | Auto-fix production code when tests fail. Mutually exclusive with `--ui`, `--debug`.                                                                                                                                 |
-| `--no-ux`      | flag                                                | off                | Skip UX-tagged tests (drag-and-drop, animations, layout). UX tests run by default.                                                                                                                                   |
-| `--files`      | path(s) or pattern                                  | all specs          | Restrict to specific test files or grep pattern. Mutually exclusive with `--replay`.                                                                                                                                 |
-| `--skip-infra` | flag                                                | off                | Skip infrastructure startup (phases 1–2); assume services are already running                                                                                                                                        |
-| `--clean`      | flag                                                | off                | Reset Supabase DB before running (re-applies all migrations from scratch)                                                                                                                                            |
-| `--replay`     | flag                                                | off                | Re-run only the failures from the most recent `.ai-context/reports/e2e-eval-*.md`. Mutually exclusive with `--ui`, `--debug`, `--files`, `--ci`.                                                                     |
-| `--retries`    | integer                                             | `1`                | Number of times to retry a failing test before classifying it as a real failure (flaky detection). Mutually exclusive with `--ui`, `--debug`, `--ci`.                                                                |
-| `--ci`         | flag                                                | off                | Match GitHub Actions runtime config: `workers=1`, `retries=2`, headless. Disables skill-level flaky-detection retry (Playwright retries instead). Mutually exclusive with `--headed`, `--ui`, `--debug`, `--replay`. |
-| `--timeout`    | milliseconds                                        | Playwright default | Override per-test timeout for slow environments                                                                                                                                                                      |
+| Parameter      | Values                                       | Default            | Description                                                                                                                                                                                                          |
+| -------------- | -------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `env`          | `dev` \| `staging`                           | `dev`              | Target environment                                                                                                                                                                                                   |
+| `--headed`     | flag                                         | off (headless)     | Show the browser window during tests. Mutually exclusive with `--ci`.                                                                                                                                                |
+| `--ui`         | flag                                         | off                | Open Playwright UI mode after infra setup; skips analysis/report phases. Requires `--app <single>`. Mutually exclusive with `--fix`, `--retries`, `--replay`, `--ci`.                                                |
+| `--debug`      | spec path                                    | (none)             | Open Playwright inspector after infra setup; requires a spec path. Skips analysis/report phases. Requires `--app <single>`. Mutually exclusive with `--fix`, `--retries`, `--replay`, `--ui`, `--ci`.                |
+| `--app`        | `web` \| `api` \| `worker` \| `bot` \| `all` | `all`              | Which app suite(s) to run                                                                                                                                                                                            |
+| `--fix`        | flag                                         | off                | Auto-fix production code when tests fail. Mutually exclusive with `--ui`, `--debug`.                                                                                                                                 |
+| `--no-ux`      | flag                                         | off                | Skip UX-tagged tests (drag-and-drop, animations, layout). UX tests run by default.                                                                                                                                   |
+| `--files`      | path(s) or pattern                           | all specs          | Restrict to specific test files or grep pattern. Mutually exclusive with `--replay`.                                                                                                                                 |
+| `--skip-infra` | flag                                         | off                | Skip infrastructure startup (phases 1–2); assume services are already running                                                                                                                                        |
+| `--clean`      | flag                                         | off                | Reset Supabase DB before running (re-applies all migrations from scratch)                                                                                                                                            |
+| `--replay`     | flag                                         | off                | Re-run only the failures from the most recent `.ai-context/reports/e2e-eval-*.md`. Mutually exclusive with `--ui`, `--debug`, `--files`, `--ci`.                                                                     |
+| `--retries`    | integer                                      | `1`                | Number of times to retry a failing test before classifying it as a real failure (flaky detection). Mutually exclusive with `--ui`, `--debug`, `--ci`.                                                                |
+| `--ci`         | flag                                         | off                | Match GitHub Actions runtime config: `workers=1`, `retries=2`, headless. Disables skill-level flaky-detection retry (Playwright retries instead). Mutually exclusive with `--headed`, `--ui`, `--debug`, `--replay`. |
+| `--timeout`    | milliseconds                                 | Playwright default | Override per-test timeout for slow environments                                                                                                                                                                      |
 
 **UX tests are included by default.** Pass `--no-ux` to skip them (e.g. for a fast smoke run). Do not require the user to opt-in — if they didn't say "skip ux" or "no ux", run them.
 
@@ -59,10 +59,10 @@ Google OAuth tests are always skipped automatically (they require live Google cr
 
 ```
 apps/
-  auth/     e2e/  ← playwright.config.ts  (port 5000 dev)
-  store/    e2e/  ← playwright.config.ts  (port 5001 dev)
-  admin/    e2e/  ← playwright.config.ts  (port 5002 dev)
-  payments/ e2e/  ← playwright.config.ts  (port 5005 dev)
+  web/      e2e/  ← playwright.config.ts  (port 3000 dev)
+  api/      e2e/  ← playwright.config.ts  (port 3001 dev)
+  worker/   e2e/  ← playwright.config.ts  (port 3002 dev)
+  bot/      e2e/  ← playwright.config.ts  (port 3003 dev)
 scripts/
   e2e.mjs                  ← unified runner (use this)
   supabase-docker.mjs      ← supabase start/stop/reset
@@ -76,24 +76,24 @@ scripts/
 Always use `node scripts/e2e.mjs`. Never call Playwright directly.
 
 ```bash
-# Supported --app values: auth | store | admin | payments
-node scripts/e2e.mjs --env {dev|staging} --app {auth|store|admin|payments} [--headed] [-- playwright_passthrough_args]
+# Supported --app values: web | api | worker | bot
+node scripts/e2e.mjs --env {dev|staging} --app {web|api|worker|bot} [--headed] [-- playwright_passthrough_args]
 
 # Examples
-node scripts/e2e.mjs --env dev --app auth
-node scripts/e2e.mjs --env staging --app admin -- apps/web/e2e/reports.spec.ts
-node scripts/e2e.mjs --env staging --app auth --headed -- --grep "permission-management"
-node scripts/e2e.mjs --env staging --app payments -- apps/worker/e2e/seller-reports.spec.ts
+node scripts/e2e.mjs --env dev --app web
+node scripts/e2e.mjs --env staging --app web -- apps/web/e2e/events.spec.ts
+node scripts/e2e.mjs --env staging --app web --headed -- --grep "permission-management"
+node scripts/e2e.mjs --env staging --app worker -- apps/worker/e2e/notifications.spec.ts
 ```
 
 ### App → spec files mapping
 
-| --app      | Spec files                  |
-| ---------- | --------------------------- |
-| `auth`     | `apps/auth/e2e/*.spec.ts`   |
-| `store`    | `apps/web/e2e/*.spec.ts`    |
-| `admin`    | `apps/web/e2e/*.spec.ts`    |
-| `payments` | `apps/worker/e2e/*.spec.ts` |
+| --app    | Spec files                  |
+| -------- | --------------------------- |
+| `web`    | `apps/web/e2e/*.spec.ts`    |
+| `api`    | `apps/api/e2e/*.spec.ts`    |
+| `worker` | `apps/worker/e2e/*.spec.ts` |
+| `bot`    | `apps/bot/e2e/*.spec.ts`    |
 
 ### Infrastructure per environment
 
@@ -138,15 +138,13 @@ Work through each phase in order. Skip phases 1–2 when `--skip-infra` is set.
 
 Before touching any infrastructure, verify all required environment variables are present. Read the appropriate `.env.{env}` file and check for:
 
-| Variable                    | Required for       |
-| --------------------------- | ------------------ |
-| `NEXT_PUBLIC_SUPABASE_URL`  | All environments   |
-| `SUPABASE_SERVICE_ROLE_KEY` | All environments   |
-| `NEXT_PUBLIC_AUTH_URL`      | Auth app tests     |
-| `NEXT_PUBLIC_STORE_URL`     | Store app tests    |
-| `NEXT_PUBLIC_ADMIN_URL`     | Admin app tests    |
-| `NEXT_PUBLIC_PAYMENTS_URL`  | Payments app tests |
-| `SUPABASE_PORT`             | Dev environment    |
+| Variable                    | Required for     |
+| --------------------------- | ---------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`  | All environments |
+| `SUPABASE_SERVICE_ROLE_KEY` | All environments |
+| `NEXT_PUBLIC_WEB_URL`       | Web app tests    |
+| `API_URL`                   | API app tests    |
+| `SUPABASE_PORT`             | Dev environment  |
 
 If any required variable is missing, **exit immediately** with a clear error naming the missing variable and which `.env.*` file to check. Do not proceed to Phase 1.
 
@@ -158,22 +156,22 @@ _(Skip when `--skip-infra` is set)_
 
 **1a. Playwright browsers**
 
-Check that Playwright browsers are installed for each app you will test. Run for each app in the run (auth, store, admin, payments):
+Check that Playwright browsers are installed for each app you will test. Run for each app in the run (web, api, worker, bot):
 
 ```bash
-pnpm --dir apps/auth exec playwright --version
 pnpm --dir apps/web exec playwright --version
-pnpm --dir apps/web exec playwright --version
+pnpm --dir apps/api exec playwright --version
 pnpm --dir apps/worker exec playwright --version
+pnpm --dir apps/bot exec playwright --version
 ```
 
 If any command fails or shows "Please run `playwright install`", install for that app:
 
 ```bash
-pnpm --dir apps/auth exec playwright install --with-deps chromium
 pnpm --dir apps/web exec playwright install --with-deps chromium
-pnpm --dir apps/web exec playwright install --with-deps chromium
+pnpm --dir apps/api exec playwright install --with-deps chromium
 pnpm --dir apps/worker exec playwright install --with-deps chromium
+pnpm --dir apps/bot exec playwright install --with-deps chromium
 ```
 
 **1b. Docker (staging only)**
@@ -230,7 +228,7 @@ For dev runs, **always kill any existing dev server processes and start a fresh 
 
 ```powershell
 # PowerShell — kill processes on all dev app ports
-$ports = @(5000, 5001, 5002, 5003, 5004, 5005, 5006)
+$ports = @(3000, 3001, 3002, 3003)
 foreach ($port in $ports) {
     $conn = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
     if ($conn) {
@@ -254,11 +252,11 @@ Write-Host "Dev server started, PID $($proc.Id)"
 
 **Step 3 — Wait for required ports to respond:**
 
-Poll each app port needed for the test run (auth=5000, admin=5002, store=5001). Wait up to 120 seconds:
+Poll each app port needed for the test run (web=3000, api=3001, worker=3002, bot=3003). Wait up to 120 seconds:
 
 ```bash
-until curl -s -o /dev/null -w "%{http_code}" http://localhost:5002/ | grep -qE "^[245]"; do sleep 3; done
-echo "admin up"
+until curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/ | grep -qE "^[245]"; do sleep 3; done
+echo "web up"
 ```
 
 **Step 4 — Check log for startup errors:**
@@ -283,8 +281,8 @@ If you see stack traces, module-not-found errors, or missing env var throws, dia
 After ports respond, do a quick sanity check on the actual app routes (not just the root):
 
 ```bash
-curl -s -o /dev/null -w "admin /en: %{http_code}\n" http://localhost:5002/en
-curl -s -o /dev/null -w "auth /en: %{http_code}\n" http://localhost:5000/en
+curl -s -o /dev/null -w "web /: %{http_code}\n" http://localhost:3000/
+curl -s -o /dev/null -w "api /health: %{http_code}\n" http://localhost:3001/health
 ```
 
 A 200 or 3xx is healthy. A 500 on a valid route means the server is broken — **do not proceed to Phase 3**. Read `C:\Temp\devserver.log` for the exception, fix the underlying cause, then restart.
@@ -295,7 +293,7 @@ Execute in this exact order. **Each step probes first, then starts only if not r
 
 **2a. Cloudflare tunnel — pre-check**
 
-Probe the tunnel URL (from `NEXT_PUBLIC_STORE_URL` or equivalent in `.env.staging`):
+Probe the tunnel URL (from `NEXT_PUBLIC_WEB_URL` or equivalent in `.env.staging`):
 
 ```bash
 curl -sI {tunnel_url} --max-time 5 | head -1
@@ -372,24 +370,24 @@ Run tests for each requested app using `node scripts/e2e.mjs`.
 
 **UX tests:** Included by default. Only skip when `--no-ux` was explicitly passed. UX tests cover drag-and-drop, animations, mobile layouts, and other interaction-heavy scenarios — they run as part of the normal suite and their results appear in the summary table.
 
-**Strategy for `--app all`:** Run auth first, then admin. Collect all results.
+**Strategy for `--app all`:** Run web first, then api, worker, bot. Collect all results.
 
 **Pass-through args for specific files:**
 
 ```bash
-node scripts/e2e.mjs --env staging --app auth -- apps/auth/e2e/permission-management.spec.ts
+node scripts/e2e.mjs --env staging --app web -- apps/web/e2e/events.spec.ts
 ```
 
 **Pass-through args for grep:**
 
 ```bash
-node scripts/e2e.mjs --env staging --app auth -- --grep "turns payments"
+node scripts/e2e.mjs --env staging --app web -- --grep "subscribe to session"
 ```
 
 **Pass-through timeout override (when `--timeout` specified):**
 
 ```bash
-node scripts/e2e.mjs --env staging --app admin -- --timeout 60000
+node scripts/e2e.mjs --env staging --app worker -- --timeout 60000
 ```
 
 **Important:** Capture full stdout/stderr — you will parse it in Phase 4.
@@ -548,8 +546,10 @@ Save a timestamped markdown report to `.ai-context/reports/`:
 
 | App       | Total | Passed | Failed | Flaky | Skipped | Duration |
 | --------- | ----- | ------ | ------ | ----- | ------- | -------- |
-| auth      | X     | X      | X      | X     | X       | Xs       |
-| admin     | X     | X      | X      | X     | X       | Xs       |
+| web       | X     | X      | X      | X     | X       | Xs       |
+| api       | X     | X      | X      | X     | X       | Xs       |
+| worker    | X     | X      | X      | X     | X       | Xs       |
+| bot       | X     | X      | X      | X     | X       | Xs       |
 | **Total** | **X** | **X**  | **X**  | **X** | **X**   | **Xs**   |
 
 **Overall status:** ✅ ALL PASSED | ⚠️ {N} FLAKY | ❌ {N} FAILED
@@ -664,7 +664,7 @@ Wait for the Playwright UI process to exit; propagate its exit code.
 
 **Requirements:**
 
-- Must specify a single app via `--app`. `--app all` is rejected with: `--ui requires a single --app (auth, admin, store, or payments)`.
+- Must specify a single app via `--app`. `--app all` is rejected with: `--ui requires a single --app (web, api, worker, or bot)`.
 - Mutually exclusive with `--fix`, `--retries`, `--replay`, `--ci`. Combining them is rejected with: `--ui cannot be combined with {flag}`.
 
 ### `--debug <spec>` (Playwright inspector)

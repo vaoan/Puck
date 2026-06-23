@@ -255,19 +255,17 @@ None.
 
 ## Coverage Per Workspace
 
-When checking coverage, verify each workspace individually:
+When checking coverage, verify each workspace individually using `--filter`:
 
-| Workspace         | Command                       | Threshold |
-| ----------------- | ----------------------------- | --------- |
-| `apps/web`        | `pnpm test:coverage:admin`    | 85%       |
-| `apps/auth`       | `pnpm test:coverage:auth`     | 85%       |
-| `apps/web`        | `pnpm test:coverage:store`    | 85%       |
-| `apps/web`        | `pnpm test:coverage:studio`   | 85%       |
-| `apps/worker`     | `pnpm test:coverage:payments` | 85%       |
-| `apps/web`        | N/A (passWithNoTests)         | —         |
-| `apps/playground` | N/A (passWithNoTests)         | —         |
-| `packages/shared` | Part of `pnpm test:coverage`  | 85%       |
-| `packages/ui`     | Part of `pnpm test:coverage`  | 85%       |
+| Workspace     | Command                                    | Threshold |
+| ------------- | ------------------------------------------ | --------- |
+| `@puck/core`  | `pnpm --filter @puck/core test:coverage`   | 85%       |
+| `apps/web`    | `pnpm --filter @puck/web test:coverage`    | 85%       |
+| `apps/api`    | `pnpm --filter @puck/api test:coverage`    | 85%       |
+| `apps/worker` | `pnpm --filter @puck/worker test:coverage` | 85%       |
+| `apps/bot`    | `pnpm --filter @puck/bot test:coverage`    | 85%       |
+
+All workspaces are also covered by the root `pnpm test:coverage` command (Turbo fans out per workspace once they exist). Per-workspace variants use `pnpm --filter <workspace> test:coverage`.
 
 ---
 
