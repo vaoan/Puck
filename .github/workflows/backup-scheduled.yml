@@ -3,7 +3,7 @@
 # Scheduled database backup — runs a backup script and notifies Telegram.
 # Triggers ONLY via manual dispatch (workflow_dispatch).
 #
-# Original CandyStore schedule (commented out — restore when wired):
+# Original schedule trigger (commented out — restore when wired):
 #   schedule:
 #     - cron: '0 4 * * *'   # 4am UTC daily
 #

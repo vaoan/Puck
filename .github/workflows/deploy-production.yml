@@ -5,7 +5,7 @@
 # Triggers ONLY via manual dispatch (workflow_dispatch).
 #
 # To activate: choose a deploy target (spec §7), restore the push-to-main
-# trigger below, and ensure deploy-gcp.yml has workflow_call uncommented.
+# trigger below. deploy-gcp.yml already declares workflow_call.
 
 name: Deploy Production (Template)
 
@@ -108,7 +108,7 @@ jobs:
 
   # ============================================
   # Deploy to GCP (primary production target).
-  # Uncomment workflow_call in deploy-gcp.yml first.
+  # deploy-gcp.yml declares workflow_call — no changes needed there.
   # deploy-local.yml is kept as a manual fallback.
   # ============================================
   deploy-gcp:

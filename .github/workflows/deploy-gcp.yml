@@ -21,7 +21,7 @@ name: Deploy GCP Production (Template)
 
 on:
   workflow_dispatch:
-  # workflow_call: {}  # Uncomment to allow orchestrator invocation
+  workflow_call: {}
   # push:              # Remove comment and configure when deploy target chosen
   #   branches:
   #     - main
