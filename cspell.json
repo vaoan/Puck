@@ -89,7 +89,6 @@
     "Angarita",
     "unrs",
     "creds",
-    "RRULE",
     "pgcron"
   ],
   "ignorePaths": [
