@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig, globalIgnores } from "eslint/config";
 import js from "@eslint/js";
+import globals from "globals";
 import tseslint from "typescript-eslint";
 import tsParser from "@typescript-eslint/parser";
 import i18next from "eslint-plugin-i18next";
@@ -665,12 +666,7 @@ const eslintConfig = defineConfig([
   // Strict i18n: Disallow ALL hardcoded user-facing strings
   {
     files: [`${APP_SRC}/**/*.{ts,tsx,js,jsx}`],
-    ignores: [
-      "**/*.test.*",
-      "**/*.spec.*",
-      "**/test/**",
-      "**/mocks/**",
-    ],
+    ignores: ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/mocks/**"],
     rules: {
       "i18next/no-literal-string": [
         "error",
@@ -950,6 +946,15 @@ const eslintConfig = defineConfig([
       "better-tailwindcss/no-unknown-classes": "off",
       "better-tailwindcss/enforce-consistent-class-order": "off",
       "better-tailwindcss/enforce-consistent-line-wrapping": "off",
+    },
+  },
+  // Node.js scripts — grant Node globals (process, __dirname, etc.)
+  {
+    files: ["scripts/**/*.{js,mjs,cjs}"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
     },
   },
   // Avoid deep relative imports
