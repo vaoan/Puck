@@ -9,10 +9,17 @@
   ],
   "versionGroups": [
     {
-      "label": "Internal workspace packages use workspace protocol",
+      "label": "Internal workspace packages use workspace:* protocol",
       "packages": ["**"],
       "dependencies": ["@puck/*"],
+      "dependencyTypes": ["prod", "dev"],
       "pinVersion": "workspace:*"
+    },
+    {
+      "label": "React peer dependencies in packages can differ from apps",
+      "dependencies": ["react", "react-dom"],
+      "dependencyTypes": ["peer"],
+      "isIgnored": true
     }
   ]
 }
