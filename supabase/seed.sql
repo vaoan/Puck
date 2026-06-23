@@ -1,0 +1,3 @@
+-- Puck seed data
+-- Populated when the first sub-projects (foundation, authoring) are built.
+-- Run via: pnpm db:reset

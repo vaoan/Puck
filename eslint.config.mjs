@@ -948,9 +948,9 @@ const eslintConfig = defineConfig([
       "better-tailwindcss/enforce-consistent-line-wrapping": "off",
     },
   },
-  // Node.js scripts — grant Node globals (process, __dirname, etc.)
+  // Node.js scripts and docker helpers — grant Node globals (process, __dirname, etc.)
   {
-    files: ["scripts/**/*.{js,mjs,cjs}"],
+    files: ["scripts/**/*.{js,mjs,cjs}", "docker/**/*.{js,mjs,cjs}"],
     languageOptions: {
       globals: {
         ...globals.node,
