@@ -116,6 +116,15 @@ sub-project 01 lands the first package.
 > ⚠️ **Puck uses its own Supabase project.** Never point `SUPABASE_URL` /
 > `SUPABASE_SERVICE_ROLE_KEY` at CandyStore or any shared / production database.
 
+## Repo boilerplate
+
+The dev-backbone rails are already in place:
+
+- **Lint / format / CI** — ESLint flat config, Prettier, Husky pre-commit hooks, Turbo-driven CI workflows, and deploy templates for Vercel and Docker/Supabase infra.
+- **Env + secrets** — `.env.{dev,ci,prod}` files validated by `scripts/load-env.mjs`; secret references use the `$secret:KEY` syntax so real values stay in `.secrets` (gitignored) and never reach the repo.
+- **Codegen template** — `orval.config.ts` at the root is a genericized REST-codegen template; wire `PUCK_OPENAPI_URL` and drop `specs/openapi.yaml` when sub-project 02 adds an OpenAPI source.
+- **Claude assistant layer** — `.claude/` holds MCP server config and project-specific guidance for the AI assistant.
+
 <details>
 <summary><b>Sister projects & conventions</b></summary>
 

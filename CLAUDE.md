@@ -42,6 +42,17 @@ Puck is decomposed into four sub-projects, built in dependency order **1 â†’ 2 â
 The foundation (#1) spec and plan live in `docs/superpowers/specs/` and
 `docs/superpowers/plans/`. Read them before implementing #1.
 
+## Repo boilerplate
+
+The dev-backbone rails are fully in place (as of the boilerplate task set, 2026-06-21).
+Design rationale: `docs/superpowers/specs/2026-06-21-repo-boilerplate-design.md`.
+Implementation plan: `docs/superpowers/plans/2026-06-21-repo-boilerplate.md`.
+
+Covers: root manifest + tsconfigs, ESLint flat config, Prettier, Husky hooks, knip/jscpd/madge,
+`scripts/load-env.mjs` (`$secret:KEY` resolver), secretlint, `.env.*` surface, `.claude/` assistant
+layer + MCP, CI workflows + deploy templates, Docker/Supabase infra, `orval.config.ts` codegen
+template, and root `vitest.config.ts`.
+
 ## References
 
 **Sister projects: `Z:\Github\candystore` and `Z:\Github\Janus`.** Puck shares
