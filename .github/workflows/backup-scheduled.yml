@@ -1,0 +1,158 @@
+# TEMPLATE — wire when deploy target is chosen (spec §7)
+#
+# Scheduled database backup — runs a backup script and notifies Telegram.
+# Triggers ONLY via manual dispatch (workflow_dispatch).
+#
+# Original CandyStore schedule (commented out — restore when wired):
+#   schedule:
+#     - cron: '0 4 * * *'   # 4am UTC daily
+#
+# To activate: implement scripts/backup-prod.mjs for Puck's Supabase project,
+# add the required secrets, then uncomment the schedule trigger above and
+# remove the TEMPLATE header.
+#
+# Secrets required:
+#   PROD_SUPABASE_ACCESS_TOKEN, PROD_SUPABASE_SERVICE_ROLE_KEY,
+#   PROD_SUPABASE_DB_PASSWORD, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
+#   TELEGRAM_BACKUPS_THREAD_ID, TELEGRAM_THREAD_ID, TELEGRAM_CRITICAL_THREAD_ID
+
+name: Scheduled Backup (Production) (Template)
+
+on:
+  workflow_dispatch:
+  # schedule:                 # Uncomment when wired (see cron above)
+  #   - cron: '0 4 * * *'
+
+concurrency:
+  group: backup-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Production Backup
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Restore backup hash cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .backup-hash
+          key: backup-hash-${{ github.run_id }}
+          restore-keys: |
+            backup-hash-
+
+      - name: Create .secrets
+        env:
+          PROD_SUPABASE_ACCESS_TOKEN: ${{ secrets.PROD_SUPABASE_ACCESS_TOKEN }}
+          PROD_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PROD_SUPABASE_SERVICE_ROLE_KEY }}
+          PROD_SUPABASE_DB_PASSWORD: ${{ secrets.PROD_SUPABASE_DB_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BACKUPS_THREAD_ID: ${{ secrets.TELEGRAM_BACKUPS_THREAD_ID }}
+          TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
+          TELEGRAM_CRITICAL_THREAD_ID: ${{ secrets.TELEGRAM_CRITICAL_THREAD_ID }}
+          SERVER_HOSTNAME: "github.com/${{ github.repository }}"
+        run: |
+          {
+            echo "PROD_SUPABASE_ACCESS_TOKEN=$PROD_SUPABASE_ACCESS_TOKEN"
+            echo "PROD_SUPABASE_SERVICE_ROLE_KEY=$PROD_SUPABASE_SERVICE_ROLE_KEY"
+            echo "PROD_SUPABASE_DB_PASSWORD=$PROD_SUPABASE_DB_PASSWORD"
+            echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN"
+            echo "TELEGRAM_CHAT_ID=$TELEGRAM_CHAT_ID"
+            echo "TELEGRAM_BACKUPS_THREAD_ID=$TELEGRAM_BACKUPS_THREAD_ID"
+            echo "TELEGRAM_THREAD_ID=$TELEGRAM_THREAD_ID"
+            echo "TELEGRAM_CRITICAL_THREAD_ID=$TELEGRAM_CRITICAL_THREAD_ID"
+            echo "SERVER_HOSTNAME=$SERVER_HOSTNAME"
+          } > .secrets
+
+      - name: Run backup
+        env:
+          SERVER_HOSTNAME: "github.com/${{ github.repository }}"
+        run: node scripts/backup-prod.mjs
+
+      - name: Remove .secrets
+        if: always()
+        run: rm -f .secrets
+
+      - name: Save backup hash cache
+        if: always()
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .backup-hash
+          key: backup-hash-${{ github.run_id }}
+
+      - name: Notify Telegram on failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_BACKUPS_THREAD_ID }}
+          RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          SERVER_HOSTNAME: "github.com/${{ github.repository }}"
+        run: |
+          python3 - <<'EOF'
+          import html, json, os, urllib.error, urllib.request
+
+          token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+          chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+          if not token or not chat_id:
+              raise SystemExit("Missing required secret: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID")
+
+          source = os.environ.get("SERVER_HOSTNAME", "github-actions")
+          run_url = os.environ.get("RUN_URL", "")
+          text = (
+              "❌ <b>Backup Failed</b>\n\n"
+              f"The scheduled production backup did not complete successfully.\n\n"
+              f"🔗 {html.escape(run_url)}\n\n"
+              f"\U0001F4CD {source}"
+          )
+
+          payload = {
+              "chat_id": chat_id,
+              "text": text,
+              "parse_mode": "HTML",
+          }
+          thread_id = os.environ.get("TELEGRAM_THREAD_ID", "").strip()
+          if thread_id:
+              try:
+                  payload["message_thread_id"] = int(thread_id)
+              except ValueError:
+                  print(f"Warning: invalid TELEGRAM_THREAD_ID={thread_id!r}, sending without thread")
+
+          data = json.dumps(payload).encode()
+          req = urllib.request.Request(
+              f"https://api.telegram.org/bot{token}/sendMessage",
+              data=data,
+              headers={"Content-Type": "application/json"},
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=10) as resp:
+                  print(f"Notification sent: {resp.read().decode()}")
+          except urllib.error.HTTPError as e:
+              print(f"Telegram API error {e.code}: {e.read().decode('utf-8', errors='replace')}")
+              raise
+          except urllib.error.URLError as e:
+              print(f"Network error reaching Telegram: {e.reason}")
+              raise
+          EOF

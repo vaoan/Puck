@@ -1,0 +1,117 @@
+# TEMPLATE — wire when deploy target is chosen (spec §7)
+#
+# Sandbox release — promotes a develop commit to staging branch.
+# Runs quality checks (format, lint, typecheck, test, build) then
+# force-updates the staging branch.
+# Triggers ONLY via manual dispatch (workflow_dispatch).
+#
+# To activate: ensure develop and staging branches exist in vaoan/Puck,
+# then this workflow is ready to use as-is.
+
+name: Sandbox Release (Promote to Staging) (Template)
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Specific commit SHA to promote (leave empty for latest develop)"
+        required: false
+        default: ""
+
+permissions: {}
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ inputs.commit_sha || 'develop' }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_ENABLE_MOCKS: "true"
+
+  promote:
+    needs: [quality-checks]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine commit to promote
+        id: resolve
+        env:
+          INPUT_COMMIT_SHA: ${{ inputs.commit_sha }}
+        run: |
+          if [ -n "$INPUT_COMMIT_SHA" ]; then
+            COMMIT="$INPUT_COMMIT_SHA"
+          else
+            COMMIT=$(git rev-parse origin/develop)
+          fi
+          echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
+          echo "Promoting commit: $COMMIT"
+          git log --oneline -1 "$COMMIT"
+
+      - name: Update staging branch
+        env:
+          RESOLVED_COMMIT: ${{ steps.resolve.outputs.commit }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create staging branch if it doesn't exist
+          if git rev-parse origin/staging >/dev/null 2>&1; then
+            echo "Staging branch exists, updating..."
+            git checkout staging
+            git reset --hard "$RESOLVED_COMMIT"
+          else
+            echo "Creating staging branch..."
+            git checkout -b staging "$RESOLVED_COMMIT"
+          fi
+
+          git push origin staging --force-with-lease
+
+      - name: Summary
+        env:
+          RESOLVED_COMMIT: ${{ steps.resolve.outputs.commit }}
+        run: |
+          echo "## Sandbox Release Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Commit** | \`${RESOLVED_COMMIT}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Checks** | Passed |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "The staging branch has been updated." >> "$GITHUB_STEP_SUMMARY"
