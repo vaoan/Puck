@@ -76,9 +76,9 @@
     "vitest": "^4.1.5"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
+    "*.{ts,tsx,js,jsx,mjs}": [
       "prettier --check",
-      "eslint --no-warn-ignored --max-warnings=0",
+      "eslint --max-warnings=0 --no-warn-ignored",
       "secretlint"
     ],
     "*.{json,md,css}": [
