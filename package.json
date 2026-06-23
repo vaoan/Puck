@@ -20,7 +20,7 @@
     "lint:fix": "eslint . --fix --no-error-on-unmatched-pattern",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "check:tools": "cspell \"**/*.{ts,tsx,md,json}\" --no-progress && ls-lint && syncpack lint && sherif",
+    "check:tools": "cspell \"**/*.{ts,tsx,md,json}\" --no-progress && ls-lint && syncpack lint && sherif && knip --no-exit-code && jscpd . && (madge --circular scripts || true)",
     "check:style": "stylelint \"apps/*/src/**/*.css\" \"packages/*/src/**/*.css\"",
     "codegen": "orval --config orval.config.ts",
     "codegen:supabase": "supabase gen types typescript --local > packages/db/src/database.types.ts",
