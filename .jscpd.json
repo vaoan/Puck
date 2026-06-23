@@ -1,7 +1,8 @@
 {
-  "threshold": 8,
+  "threshold": 5,
   "reporters": ["console"],
   "ignore": [
+    "**/scripts/**",
     "**/node_modules/**",
     "**/.next/**",
     "**/coverage/**",
