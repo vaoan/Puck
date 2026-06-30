@@ -28,16 +28,26 @@ describe("user_profiles", () => {
     // Under PostgREST + RLS, a non-owner UPDATE is a silent 0-row no-op: the
     // USING (auth.uid() = id) policy filters the row out and no error is returned.
     // Prove the security property by verifying via admin that the row was not mutated.
+
+    // Set a known sentinel on the target profile so the invariant is explicit
+    // and cannot pass vacuously if display_name happened to be null initially.
+    await admin()
+      .from("user_profiles")
+      .update({ display_name: "original-name" })
+      .eq("id", other.id);
+
     await cli
       .from("user_profiles")
       .update({ display_name: "hacker" })
       .eq("id", other.id);
 
-    const { data: check } = await admin()
+    const { data: check, error: checkErr } = await admin()
       .from("user_profiles")
       .select("display_name")
       .eq("id", other.id)
       .single();
-    expect(check?.display_name).not.toBe("hacker"); // cannot update others
+    expect(checkErr).toBeNull(); // admin read must succeed
+    expect(check).not.toBeNull(); // the target profile must exist
+    expect(check!.display_name).toBe("original-name"); // sentinel survived — cannot update others
   });
 });
