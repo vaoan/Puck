@@ -243,3 +243,34 @@ jobs:
             packages/*/coverage/
           retention-days: 7
           if-no-files-found: ignore
+
+  # ============================================
+  # CI Gate — single required status check.
+  #
+  # Aggregates every job above into ONE context that branch protection
+  # requires. It ALWAYS runs (if: always()) so it always reports a result,
+  # and it fails if any upstream job failed or was cancelled. A legitimately
+  # skipped job (e.g. docs-only PRs skip quality/unit-tests) does NOT fail
+  # the gate. This is what makes "no merge unless checks pass" airtight:
+  # protection requires this one context, and new jobs are covered simply by
+  # adding them to `needs` below.
+  # ============================================
+  ci-gate:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [changes, quality, unit-tests]
+    if: always()
+    steps:
+      - name: Verify no required job failed
+        env:
+          RESULTS: "${{ needs.changes.result }} ${{ needs.quality.result }} ${{ needs.unit-tests.result }}"
+        run: |
+          echo "Upstream job results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              echo "::error::A required CI job did not pass (result: $r). Blocking merge."
+              exit 1
+            fi
+          done
+          echo "All required CI jobs passed or were appropriately skipped."

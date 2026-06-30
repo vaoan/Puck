@@ -412,3 +412,34 @@ jobs:
                 body: summary
               });
             }
+
+  # ============================================
+  # PR Gate — single required status check.
+  #
+  # Aggregates the merge-blocking PR jobs (branch target, PR title,
+  # security, a11y, visual regression) into ONE context that branch
+  # protection requires. Always runs (if: always()) so it always reports,
+  # and fails if any upstream job failed or was cancelled. Skipped jobs
+  # (e.g. security on docs-only PRs, a11y/visual when no web app exists)
+  # do NOT fail the gate. `summary` is intentionally excluded — it only
+  # posts a comment and must never block a merge.
+  # ============================================
+  pr-gate:
+    name: PR Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [branch-target, pr-title, changes, security, accessibility, visual-regression]
+    if: always()
+    steps:
+      - name: Verify no required job failed
+        env:
+          RESULTS: "${{ needs.branch-target.result }} ${{ needs.pr-title.result }} ${{ needs.changes.result }} ${{ needs.security.result }} ${{ needs.accessibility.result }} ${{ needs.visual-regression.result }}"
+        run: |
+          echo "Upstream job results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              echo "::error::A required PR check did not pass (result: $r). Blocking merge."
+              exit 1
+            fi
+          done
+          echo "All required PR checks passed or were appropriately skipped."
