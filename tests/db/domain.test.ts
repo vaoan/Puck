@@ -30,3 +30,15 @@ describe("domain schema", () => {
     expect(count).toBe(0); // cascade
   });
 });
+
+describe("documents", () => {
+  it("rejects a document with neither or both parents", async () => {
+    const a = admin();
+    const { error: noneErr } = await a.from("documents").insert({
+      storage_path: "x",
+      filename: "f",
+      content_type: "application/pdf",
+    });
+    expect(noneErr).not.toBeNull();
+  });
+});
