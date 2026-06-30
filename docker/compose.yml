@@ -1,0 +1,39 @@
+# Docker Compose for a Puck app container.
+# All values are sourced from the active env file — no hardcoded values.
+#
+# Usage (via docker-build.mjs):
+#   docker compose -f docker/compose.yml --env-file .env.<targetEnv> up -d
+#
+# Variables resolved from the env file:
+#   PUCK_PROD_IMAGE_NAME     — Docker image to run (built by docker-build.mjs)
+#   PUCK_PROD_CONTAINER_NAME — Name for the running container
+#   HOST_PORT                — Host port to bind the container on
+
+services:
+  app:
+    image: ${PUCK_PROD_IMAGE_NAME}
+    container_name: ${PUCK_PROD_CONTAINER_NAME}
+    ports:
+      - "${HOST_PORT}:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    environment:
+      # Runtime overrides — allow the container to reach a local Supabase
+      # instance (e.g. during e2e) without a full image rebuild.
+      # These are only injected when the variables are set in the host env.
+      - SUPABASE_URL_INTERNAL=${SUPABASE_URL_INTERNAL:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+      # Telegram alerting for the in-container health watcher (optional).
+      # Set both variables to enable; leave empty to keep alerts disabled.
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - SERVER_HOSTNAME=${HOSTNAME:-puck-prod}
+    extra_hosts:
+      # Allow the container to reach host-local services (e.g. Supabase on
+      # localhost:54321) via host.docker.internal on Linux/Windows/Mac.
+      - "host.docker.internal:host-gateway"

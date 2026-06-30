@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": { "entry": ["scripts/*.mjs"], "project": ["scripts/**/*.mjs"] }
+  },
+  "ignore": ["**/generated/**", "**/*.config.*"],
+  "ignoreDependencies": [
+    "eslint-config-next",
+    "eslint-plugin-jsx-a11y",
+    "@secretlint/secretlint-rule-preset-recommend",
+    "tsx"
+  ],
+  "ignoreBinaries": ["gh"]
+}

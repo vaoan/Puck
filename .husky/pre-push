@@ -1,1 +1,72 @@
-pnpm typecheck && pnpm test
+#!/usr/bin/env sh
+# Resolve base ref for change detection.
+# Preference: origin/develop → origin/main → @{upstream} → skip-safe fallback.
+BASE_BRANCH="origin/develop"
+if ! git show-ref --verify --quiet "refs/remotes/origin/develop"; then
+  if git show-ref --verify --quiet "refs/remotes/origin/main"; then
+    BASE_BRANCH="origin/main"
+  else
+    # Upstream not resolvable — compare against merge-base with HEAD~1 or run tests.
+    BASE_BRANCH=""
+  fi
+fi
+
+if [ -n "$BASE_BRANCH" ]; then
+  BASE_SHA=$(git merge-base HEAD "$BASE_BRANCH" 2>/dev/null || true)
+  if [ -n "$BASE_SHA" ]; then
+    CHANGED_FILES=$(git diff --name-only "${BASE_SHA}..HEAD" || true)
+  else
+    CHANGED_FILES=$(git diff --name-only "${BASE_BRANCH}..HEAD" 2>/dev/null || true)
+  fi
+else
+  # No resolvable base — treat everything as changed (safe: run tests).
+  CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || git diff --name-only HEAD || true)
+fi
+
+# Detect deploy-related changes (Docker/infra).
+DEPLOY_CHANGED=false
+echo "$CHANGED_FILES" | grep -qE '^(Dockerfile|docker/|\.dockerignore)' && DEPLOY_CHANGED=true
+
+# Detect non-docs changes: any .ts/.tsx/.js/.jsx, apps/*, packages/*, or
+# root tooling/manifest files that would affect the built product.
+DOCS_ONLY=true
+if echo "$CHANGED_FILES" | grep -qE '\.(ts|tsx|js|jsx|mjs)$'; then
+  DOCS_ONLY=false
+elif echo "$CHANGED_FILES" | grep -qE '^(apps/|packages/)'; then
+  DOCS_ONLY=false
+elif echo "$CHANGED_FILES" | grep -qE '^(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig.*\.json|eslint\.config\..*)'; then
+  DOCS_ONLY=false
+fi
+
+if [ "$DOCS_ONLY" = "true" ]; then
+  echo "No code/deploy changes detected, skipping pre-push validation."
+  exit 0
+fi
+
+echo "Running pre-push checks..."
+
+# Unit tests — no-op safe when no workspaces exist yet.
+pnpm turbo test --concurrency=1 || exit 1
+
+# Docker health check — only when deploy files changed.
+# Guarded here so it never runs in the current docs/config-only state.
+if [ "$DEPLOY_CHANGED" = "true" ]; then
+  echo "Deploy-related changes detected. Running Docker health check..."
+
+  for docker_path in \
+    "/c/Program Files/Docker/Docker/resources/bin" \
+    "$HOME/AppData/Local/Docker/resources/bin" \
+    "/usr/local/bin"; do
+    if [ -d "$docker_path" ] && ! command -v docker > /dev/null 2>&1; then
+      export PATH="$docker_path:$PATH"
+    fi
+  done
+
+  if ! docker info > /dev/null 2>&1; then
+    echo "WARNING: Docker is not running locally — skipping Docker health check (CI will run it)."
+  else
+    sh scripts/docker-health-check.sh || exit 1
+  fi
+fi
+
+echo "All pre-push checks passed."

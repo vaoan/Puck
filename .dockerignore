@@ -1,0 +1,65 @@
+# =============================================================================
+# Puck — .dockerignore
+# Keeps the build context lean; exclude everything we don't need inside the image.
+# =============================================================================
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Local env / secrets (never bake into images)
+.env
+.env.*
+.secrets
+.secrets.*
+
+# Node modules — reinstalled from lockfile inside the image
+node_modules
+**/node_modules
+
+# pnpm internal markers (Windows: restricted NTFS permissions block Docker's
+# build-context sender from enumerating them even with node_modules excluded)
+**/.ignored_*
+
+# Build outputs
+**/dist
+**/.next
+**/out
+**/build
+**/coverage
+
+# Next.js generated files
+**/.next
+**/next-env.d.ts
+
+# Turbo cache
+.turbo
+
+# Test artefacts
+**/__snapshots__
+**/*.snap
+**/playwright-report
+**/test-results
+
+# IDE / OS
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Docs (not needed at runtime)
+docs
+*.md
+!docker/**/*.md
+
+# Claude / superpowers workdir
+.claude
+.superpowers
+skills-lock.json
+
+# Supabase local state (not needed inside the image)
+supabase/.branches
+supabase/.temp

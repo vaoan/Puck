@@ -1,12 +1,4 @@
 {
   "files": [],
-  "references": [
-    { "path": "packages/config" },
-    { "path": "packages/core" },
-    { "path": "packages/db" },
-    { "path": "packages/queue" },
-    { "path": "packages/channels" },
-    { "path": "apps/api" },
-    { "path": "apps/worker" }
-  ]
+  "references": []
 }

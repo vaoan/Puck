@@ -1,0 +1,414 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24"
+  PNPM_VERSION: "10.32.1"
+
+jobs:
+  # ============================================
+  # Branch Target Validation
+  # ============================================
+  branch-target:
+    name: Branch Target
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate branch can target base
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          script: |
+            const baseBranch = context.payload.pull_request.base.ref;
+            const headBranch = context.payload.pull_request.head.ref;
+
+            console.log(`PR: ${headBranch} -> ${baseBranch}`);
+
+            const isRelease = headBranch.startsWith('release/');
+            const isFix = headBranch.startsWith('fix/');
+
+            if (baseBranch === 'main') {
+              if (!isRelease && !isFix) {
+                core.setFailed(
+                  `Branch '${headBranch}' cannot target 'main'.\n\n` +
+                  `Only release/* and fix/* branches can merge to main.\n\n` +
+                  `Please change the base branch to 'develop' or rename your branch.`
+                );
+                return;
+              }
+              console.log(`Release/fix branch targeting main - OK`);
+            } else if (baseBranch === 'develop') {
+              if (isRelease) {
+                core.setFailed(
+                  `Release branch '${headBranch}' should target 'main', not 'develop'.`
+                );
+                return;
+              }
+              console.log(`Targeting develop - OK`);
+            } else {
+              console.log(`Targeting ${baseBranch} - OK`);
+            }
+
+  # ============================================
+  # PR Title Check (Conventional Commits)
+  # ============================================
+  pr-title:
+    name: PR Title
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check PR title format
+        uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017 # v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            chore
+            revert
+            ci
+          requireScope: false
+          subjectPattern: ^.{1,80}$
+          subjectPatternError: |
+            PR title must be less than 80 characters.
+            Example: "feat(web): add event creation page"
+
+  # ============================================
+  # Changed Files Analysis
+  # ============================================
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      web: ${{ steps.changes.outputs.web }}
+      api: ${{ steps.changes.outputs.api }}
+      worker: ${{ steps.changes.outputs.worker }}
+      bot: ${{ steps.changes.outputs.bot }}
+      packages: ${{ steps.changes.outputs.packages }}
+      tests: ${{ steps.changes.outputs.tests }}
+      docs: ${{ steps.changes.outputs.docs }}
+      deps: ${{ steps.changes.outputs.deps }}
+      code: ${{ steps.changes.outputs.code }}
+      docs-only: ${{ steps.check.outputs.docs-only }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        id: changes
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+            api:
+              - 'apps/api/**'
+            worker:
+              - 'apps/worker/**'
+            bot:
+              - 'apps/bot/**'
+            packages:
+              - 'packages/**'
+            tests:
+              - 'apps/*/src/**/*.test.ts'
+              - 'apps/*/src/**/*.test.tsx'
+              - 'packages/*/src/**/*.test.ts'
+              - 'apps/*/vitest.config.ts'
+              - 'packages/*/vitest.config.ts'
+            docs:
+              - '*.md'
+              - 'docs/**'
+              - '.claude/**'
+              - '.superpowers/**'
+            deps:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'apps/*/package.json'
+              - 'packages/*/package.json'
+            code:
+              - 'apps/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+
+      - name: Check if docs-only
+        id: check
+        run: |
+          if [ "${{ steps.changes.outputs.code }}" = "false" ]; then
+            echo "docs-only=true" >> $GITHUB_OUTPUT
+          else
+            echo "docs-only=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ============================================
+  # Security Audit (skip for docs-only PRs)
+  # ============================================
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: changes
+    if: needs.changes.outputs.docs-only == 'false'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Semgrep
+        run: python -m pip install --upgrade pip semgrep
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run security audit
+        run: pnpm audit --audit-level=high || echo "::warning::Security vulnerabilities found — review before merging"
+
+      - name: Run Semgrep (security-audit + OWASP Top 10)
+        run: |
+          semgrep scan --config=p/security-audit --config=p/owasp-top-ten \
+            --error --quiet \
+            --exclude='node_modules' --exclude='.pnpm-store' \
+            . || echo "::warning::Semgrep findings — review before merging"
+
+      - name: Run secretlint
+        run: pnpm exec secretlint "**/*"
+
+  # ============================================
+  # Accessibility (gated: only when apps exist)
+  # ============================================
+  accessibility:
+    name: Accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: changes
+    if: needs.changes.outputs.web == 'true' || needs.changes.outputs.packages == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Check if web app exists
+        id: has-web
+        run: |
+          if [ -d "apps/web" ]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup pnpm
+        if: steps.has-web.outputs.value == 'true'
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        if: steps.has-web.outputs.value == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        if: steps.has-web.outputs.value == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Check accessibility script
+        id: has-a11y
+        if: steps.has-web.outputs.value == 'true'
+        run: |
+          if [ -f "apps/web/package.json" ] && jq -e '.scripts["test:a11y"]' apps/web/package.json > /dev/null 2>&1; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run accessibility tests
+        if: steps.has-web.outputs.value == 'true' && steps.has-a11y.outputs.value == 'true'
+        run: pnpm --filter web run test:a11y
+
+      - name: Skip accessibility (app or script not present)
+        if: steps.has-web.outputs.value != 'true' || steps.has-a11y.outputs.value != 'true'
+        run: 'echo "::notice::Skipping accessibility: apps/web does not exist or has no test:a11y script"'
+
+  # ============================================
+  # Visual Regression (gated: only when apps exist)
+  # ============================================
+  visual-regression:
+    name: Visual Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: changes
+    if: needs.changes.outputs.web == 'true' || needs.changes.outputs.packages == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Check if web app exists
+        id: has-web
+        run: |
+          if [ -d "apps/web" ]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup pnpm
+        if: steps.has-web.outputs.value == 'true'
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        if: steps.has-web.outputs.value == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        if: steps.has-web.outputs.value == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Check visual regression script
+        id: has-visual
+        if: steps.has-web.outputs.value == 'true'
+        run: |
+          if [ -f "apps/web/package.json" ] && jq -e '.scripts["test:visual"]' apps/web/package.json > /dev/null 2>&1; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run visual regression tests
+        if: steps.has-web.outputs.value == 'true' && steps.has-visual.outputs.value == 'true'
+        run: pnpm --filter web run test:visual
+
+      - name: Upload visual diff artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: visual-diff
+          path: apps/web/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Skip visual regression (app or script not present)
+        if: steps.has-web.outputs.value != 'true' || steps.has-visual.outputs.value != 'true'
+        run: 'echo "::notice::Skipping visual regression: apps/web does not exist or has no test:visual script"'
+
+  # ============================================
+  # PR Summary Comment
+  # ============================================
+  summary:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [changes]
+    if: always()
+    steps:
+      - name: Create or update PR comment
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          script: |
+            const changes = {
+              web:      '${{ needs.changes.outputs.web }}'      === 'true',
+              api:      '${{ needs.changes.outputs.api }}'      === 'true',
+              worker:   '${{ needs.changes.outputs.worker }}'   === 'true',
+              bot:      '${{ needs.changes.outputs.bot }}'      === 'true',
+              packages: '${{ needs.changes.outputs.packages }}' === 'true',
+              tests:    '${{ needs.changes.outputs.tests }}'    === 'true',
+              docs:     '${{ needs.changes.outputs.docs }}'     === 'true',
+              deps:     '${{ needs.changes.outputs.deps }}'     === 'true',
+            };
+
+            let summary = '## PR Analysis\n\n';
+            summary += '### Changed Areas\n';
+            summary += `| Area | Changed |\n`;
+            summary += `|------|:-------:|\n`;
+            summary += `| Web app (apps/web) | ${changes.web      ? 'YES' : '-'} |\n`;
+            summary += `| API server (apps/api) | ${changes.api   ? 'YES' : '-'} |\n`;
+            summary += `| Worker (apps/worker) | ${changes.worker  ? 'YES' : '-'} |\n`;
+            summary += `| Bot (apps/bot) | ${changes.bot           ? 'YES' : '-'} |\n`;
+            summary += `| Shared packages | ${changes.packages      ? 'YES' : '-'} |\n`;
+            summary += `| Tests | ${changes.tests                   ? 'YES' : '-'} |\n`;
+            summary += `| Documentation | ${changes.docs            ? 'YES' : '-'} |\n`;
+            summary += `| Dependencies | ${changes.deps             ? 'YES' : '-'} |\n`;
+
+            const hasCode = changes.web || changes.api || changes.worker || changes.bot || changes.packages;
+            if (hasCode && !changes.tests) {
+              summary += '\n### TDD Reminder\n';
+              summary += 'Source code changed but no unit tests were modified. ';
+              summary += 'Please ensure new/modified code has test coverage.\n';
+            }
+
+            if (changes.deps) {
+              summary += '\n### Dependency Changes\n';
+              summary += 'Dependencies were modified. Security audit will run automatically.\n';
+            }
+
+            if (changes.packages) {
+              summary += '\n### Shared Package Changes\n';
+              summary += 'Shared packages were modified. All apps will be rebuilt/tested.\n';
+            }
+
+            summary += '\n---\n';
+            summary += '*This comment is automatically updated on each push.*';
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('## PR Analysis')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: summary
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: summary
+              });
+            }
