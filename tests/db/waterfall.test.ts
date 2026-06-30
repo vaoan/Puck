@@ -65,5 +65,38 @@ describe("waterfall helpers", () => {
         p_key: "session.edit_details",
       }),
     ).toBe(true);
+
+    // a completely unrelated user is denied
+    const stranger = await createUser();
+    const strangerCli = await userClient(stranger.email, stranger.password);
+    expect(
+      await can(strangerCli, "can_act_on_session", {
+        p_session_id: sessionId,
+        p_key: "session.edit_details",
+      }),
+    ).toBe(false);
+
+    // a delegate of a different, unrelated event is also denied
+    const otherOwner = await createUser();
+    const { id: otherEventId } = await makeEvent(a, {
+      owner_id: otherOwner.id,
+    });
+    const otherDelegate = await createUser();
+    await a.from("event_delegates").insert({
+      event_id: otherEventId,
+      user_id: otherDelegate.id,
+      permissions: ["session.edit_details"],
+      granted_by: otherOwner.id,
+    });
+    const otherDelegateCli = await userClient(
+      otherDelegate.email,
+      otherDelegate.password,
+    );
+    expect(
+      await can(otherDelegateCli, "can_act_on_session", {
+        p_session_id: sessionId,
+        p_key: "session.edit_details",
+      }),
+    ).toBe(false);
   });
 });
