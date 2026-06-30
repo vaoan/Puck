@@ -5,6 +5,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 import tsParser from "@typescript-eslint/parser";
 import i18next from "eslint-plugin-i18next";
+import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import unusedImports from "eslint-plugin-unused-imports";
 import security from "eslint-plugin-security";
@@ -337,6 +338,7 @@ const eslintConfig = defineConfig([
       },
     },
     plugins: {
+      react,
       "react-hooks": reactHooks,
       "unused-imports": unusedImports,
       import: importPlugin,
@@ -568,6 +570,10 @@ const eslintConfig = defineConfig([
       ],
     },
     settings: {
+      react: { version: "detect" },
+      "import/resolver": {
+        typescript: { alwaysTryTypes: true },
+      },
       "boundaries/elements": [
         {
           type: "shared-layouts",
