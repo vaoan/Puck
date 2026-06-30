@@ -42,3 +42,24 @@ describe("permission catalog + has_global_permission", () => {
     expect(await hasPerm(u.id, "platform.admin")).toBe(false);
   });
 });
+
+describe("default consumer permissions", () => {
+  it("grants the 4 consumer keys on signup", async () => {
+    const { createUser } = await import("./helpers.js");
+    const u = await createUser();
+    const a = (await import("./helpers.js")).admin();
+    const { data } = await a
+      .from("user_permissions")
+      .select("permissions(key)")
+      .eq("user_id", u.id);
+    const keys = (data ?? [])
+      .map((r: { permissions: { key: string } }) => r.permissions.key)
+      .sort();
+    expect(keys).toEqual([
+      "content.read",
+      "event.read",
+      "session.read",
+      "subscriptions.manage",
+    ]);
+  });
+});
