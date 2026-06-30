@@ -8,7 +8,7 @@ major_version = 17
 
 [api]
 port = 54321
-schemas = ["public"]
+schemas = ["public", "audit"]
 extra_search_path = ["public"]
 
 [studio]
