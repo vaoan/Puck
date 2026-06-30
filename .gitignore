@@ -12,6 +12,7 @@ dist/
 # test output
 coverage/
 playwright-report/
+.playwright-mcp/
 
 # env & secrets
 .env

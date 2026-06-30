@@ -53,6 +53,21 @@ Covers: root manifest + tsconfigs, ESLint flat config, Prettier, Husky hooks, kn
 layer + MCP, CI workflows + deploy templates, Docker/Supabase infra, `orval.config.ts` codegen
 template, and root `vitest.config.ts`.
 
+## Design guidelines
+
+> ⚠️ **Any Puck UI MUST follow `docs/design/README.md`** — the canonical, binding
+> design standard (single source of truth for color, type, shape, motion, voice).
+
+Puck's look is **Transit-app style: friendly but still serious** — phone-first,
+the schedule itself is the hero, **functional color** (each track a hue, one
+rationed `--now` signal), chunky rounded flat cards, oversized tabular times.
+Brand anchor is **iris/indigo** (nod to _A Midsummer Night's Dream_); signature
+is the pinned **"now" card** + the Puck **messenger-sprite / 40-minute orbit**
+reminder moment. `globals.css` (Tailwind v4) and the `apps/web` component library
+derive directly from the tokens in `docs/design/README.md`. Decision record + why:
+`docs/design/2026-06-30-puck-visual-direction.md`. Reference screenshots:
+`docs/design/assets/`.
+
 ## References
 
 **Sister projects: `Z:\Github\candystore` and `Z:\Github\Janus`.** Puck shares
