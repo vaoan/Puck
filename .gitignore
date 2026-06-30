@@ -12,6 +12,7 @@ dist/
 # test output
 coverage/
 playwright-report/
+.playwright-mcp/
 
 # env & secrets
 .env
@@ -40,6 +41,9 @@ pnpm-debug.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# integration test env
+.env.test
 
 # Claude/AI local files
 .claude/tools/.env.local
