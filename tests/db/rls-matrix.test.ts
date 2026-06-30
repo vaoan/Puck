@@ -1,3 +1,4 @@
+import { createClient } from "@supabase/supabase-js";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   admin,
@@ -6,6 +7,14 @@ import {
   makeSession,
   userClient,
 } from "./helpers.js";
+
+function anonClient() {
+  return createClient(
+    process.env.SUPABASE_URL as string,
+    process.env.SUPABASE_ANON_KEY as string,
+    { auth: { persistSession: false } },
+  );
+}
 
 // One event with: owner, a Designer (content only), a Communications mgr (broadcast only).
 let eventId: string;
@@ -69,17 +78,56 @@ describe("RLS permission matrix", () => {
   });
 
   it("Anonymous cannot read a draft event", async () => {
-    const anonCli = await (
-      await import("@supabase/supabase-js")
-    ).createClient(
-      process.env.SUPABASE_URL as string,
-      process.env.SUPABASE_ANON_KEY as string,
-      { auth: { persistSession: false } },
-    );
+    const anonCli = anonClient();
     const { data } = await anonCli
       .from("events")
       .select("id")
       .eq("id", eventId);
     expect(data).toEqual([]);
+  });
+
+  it("a published document is anon-readable only when its parent event is published+public", async () => {
+    const a = admin();
+    const owner = await createUser();
+    // Draft + private parent event with a *published* document on it.
+    const { id: evId } = await makeEvent(a, {
+      owner_id: owner.id,
+      status: "draft",
+      visibility: "private",
+    });
+    const { data: doc, error: docErr } = await a
+      .from("documents")
+      .insert({
+        event_id: evId,
+        storage_path: "p",
+        filename: "secret.pdf",
+        is_published: true,
+      })
+      .select("id")
+      .single();
+    expect(docErr).toBeNull();
+    const docId = doc!.id as string;
+
+    const anonCli = anonClient();
+
+    // Even though the doc itself is published, the parent is draft+private →
+    // the tightened transitive check hides it from anon.
+    const { data: hidden } = await anonCli
+      .from("documents")
+      .select("id")
+      .eq("id", docId);
+    expect(hidden).toEqual([]);
+
+    // Publish + make the event public → the document becomes anon-readable.
+    await a
+      .from("events")
+      .update({ status: "published", visibility: "public" })
+      .eq("id", evId);
+
+    const { data: visible } = await anonCli
+      .from("documents")
+      .select("id")
+      .eq("id", docId);
+    expect(visible).toEqual([{ id: docId }]);
   });
 });

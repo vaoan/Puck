@@ -25,6 +25,51 @@ describe("permission catalog + has_global_permission", () => {
     expect(await hasPerm(u.id, "events.create")).toBe(true);
   });
 
+  it("an expired grant yields no permission", async () => {
+    const u = await createUser();
+    const { data: perm } = await admin()
+      .from("permissions")
+      .select("id")
+      .eq("key", "events.create")
+      .single();
+    const pastIso = new Date(Date.now() - 3_600_000).toISOString();
+    const { error } = await admin().from("user_permissions").insert({
+      user_id: u.id,
+      permission_id: perm.id,
+      mode: "grant",
+      granted_by: u.id,
+      expires_at: pastIso,
+    });
+    expect(error).toBeNull();
+    expect(await hasPerm(u.id, "events.create")).toBe(false);
+  });
+
+  it("an expired deny does not suppress a live grant", async () => {
+    const u = await createUser();
+    const { data: perm } = await admin()
+      .from("permissions")
+      .select("id")
+      .eq("key", "platform.admin")
+      .single();
+    const pastIso = new Date(Date.now() - 3_600_000).toISOString();
+    // Live (non-expiring) grant ...
+    await admin().from("user_permissions").insert({
+      user_id: u.id,
+      permission_id: perm.id,
+      mode: "grant",
+      granted_by: u.id,
+    });
+    // ... plus an already-expired deny: it must NOT suppress the live grant.
+    await admin().from("user_permissions").insert({
+      user_id: u.id,
+      permission_id: perm.id,
+      mode: "deny",
+      granted_by: u.id,
+      expires_at: pastIso,
+    });
+    expect(await hasPerm(u.id, "platform.admin")).toBe(true);
+  });
+
   it("an explicit deny overrides a grant", async () => {
     const u = await createUser();
     await grantGlobal(u.id, "platform.admin");

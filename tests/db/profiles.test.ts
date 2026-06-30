@@ -1,5 +1,14 @@
+import { createClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import { admin, createUser, userClient } from "./helpers.js";
+
+function anonClient() {
+  return createClient(
+    process.env.SUPABASE_URL as string,
+    process.env.SUPABASE_ANON_KEY as string,
+    { auth: { persistSession: false } },
+  );
+}
 
 describe("user_profiles", () => {
   it("auto-creates a profile when an auth user is created", async () => {
@@ -49,5 +58,55 @@ describe("user_profiles", () => {
     expect(checkErr).toBeNull(); // admin read must succeed
     expect(check).not.toBeNull(); // the target profile must exist
     expect(check!.display_name).toBe("original-name"); // sentinel survived — cannot update others
+  });
+
+  it("anon cannot read PII columns (email/provider) but can read public profile columns", async () => {
+    const u = await createUser();
+    const anon = anonClient();
+
+    // PII column is denied at the column-privilege layer (before RLS) — Postgres
+    // surfaces 42501 "permission denied for table user_profiles".
+    const { error: emailErr } = await anon
+      .from("user_profiles")
+      .select("email")
+      .eq("id", u.id);
+    expect(emailErr).not.toBeNull();
+    expect(emailErr!.code).toBe("42501");
+
+    const { error: providerErr } = await anon
+      .from("user_profiles")
+      .select("provider")
+      .eq("id", u.id);
+    expect(providerErr).not.toBeNull();
+    expect(providerErr!.code).toBe("42501");
+
+    // Non-PII columns remain publicly readable for display.
+    const { data, error } = await anon
+      .from("user_profiles")
+      .select("id,display_name,avatar_url")
+      .eq("id", u.id);
+    expect(error).toBeNull();
+    expect(data).not.toBeNull();
+    expect(data![0]!.id).toBe(u.id);
+  });
+
+  it("an authenticated non-owner also cannot read another user's email", async () => {
+    const target = await createUser();
+    const viewer = await createUser();
+    const cli = await userClient(viewer.email, viewer.password);
+
+    const { error: emailErr } = await cli
+      .from("user_profiles")
+      .select("email")
+      .eq("id", target.id);
+    expect(emailErr).not.toBeNull();
+    expect(emailErr!.code).toBe("42501");
+
+    // ...but the non-PII display columns are still readable.
+    const { error: okErr } = await cli
+      .from("user_profiles")
+      .select("id,display_name")
+      .eq("id", target.id);
+    expect(okErr).toBeNull();
   });
 });
