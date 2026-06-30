@@ -336,7 +336,7 @@ PR title: chore(release): v2026.04.22.1 [GH-152]
      - [x] Dismiss stale PR approvals when new commits are pushed
    - [x] **Require status checks to pass before merging**
      - [x] Require branches to be up to date before merging
-     - Add required checks: `Branch Target`, `Quality Checks`, `Unit Tests`, `Docker Build`
+     - Add required checks: `CI Gate`, `PR Gate`, `PR Freshness`
    - [x] **Do not allow bypassing the above settings** (enforce on admins)
    - [ ] **Allow force pushes** (NEVER enable this)
    - [ ] **Allow deletions** (NEVER enable this)
@@ -344,15 +344,27 @@ PR title: chore(release): v2026.04.22.1 [GH-152]
 
 #### Current `main` Protection (Configured)
 
-| Setting                | Value                                                           |
-| ---------------------- | --------------------------------------------------------------- |
-| Required approvals     | 0                                                               |
-| Dismiss stale reviews  | Yes                                                             |
-| Required status checks | `Branch Target`, `Quality Checks`, `Unit Tests`, `Docker Build` |
-| Require up-to-date     | Yes                                                             |
-| Enforce on admins      | Yes                                                             |
-| Force pushes           | Disabled                                                        |
-| Deletions              | Disabled                                                        |
+| Setting                | Value                                |
+| ---------------------- | ------------------------------------ |
+| Required approvals     | 0                                    |
+| Dismiss stale reviews  | Yes                                  |
+| Required status checks | `CI Gate`, `PR Gate`, `PR Freshness` |
+| Require up-to-date     | Yes (`strict`)                       |
+| Enforce on admins      | Yes (no bypass)                      |
+| Force pushes           | Disabled                             |
+| Deletions              | Disabled                             |
+
+> **Required checks use the aggregator-gate pattern.** `CI Gate` (in
+> `ci.yml`) and `PR Gate` (in `pr-checks.yml`) are jobs that `needs:` every
+> other job in their workflow, run with `if: always()`, and fail if any
+> upstream job failed or was cancelled — while tolerating legitimately
+> _skipped_ jobs (e.g. docs-only PRs skip the code jobs). `PR Freshness`
+> (in `pr-freshness.yml`) always runs and blocks stale/config-drifted PRs.
+> Requiring these three contexts (instead of each individual job) is what
+> keeps merges airtight: a skipped conditional check can never be miscounted
+> as "missing", and new jobs are covered by adding them to a gate's `needs:`.
+> Because checks are conditional (jobs skip on docs-only / no-app PRs),
+> **never** require the individual job names directly — require only the gates.
 
 #### Protect `develop` Branch
 
@@ -363,7 +375,7 @@ PR title: chore(release): v2026.04.22.1 [GH-152]
      - [x] Dismiss stale PR approvals when new commits are pushed
    - [x] **Require status checks to pass before merging**
      - [x] Require branches to be up to date before merging
-     - Add required checks: `Branch Target`, `Quality Checks`, `Unit Tests`, `Docker Build`
+     - Add required checks: `CI Gate`, `PR Gate`, `PR Freshness`
    - [x] **Do not allow bypassing the above settings** (enforce on admins)
    - [ ] **Allow force pushes** (leave unchecked)
    - [ ] **Allow deletions** (leave unchecked)
