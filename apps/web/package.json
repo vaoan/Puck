@@ -17,6 +17,7 @@
     "@hookform/resolvers": "^5.4.0",
     "@puck/auth": "workspace:*",
     "@puck/db": "workspace:*",
+    "@puck/ui": "workspace:*",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.110.0",
     "@tanstack/react-query": "^5.101.2",

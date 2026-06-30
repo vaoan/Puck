@@ -1,0 +1,84 @@
+/**
+ * Puck design tokens — OKLCH CSS variables.
+ *
+ * Single source of truth: docs/design/README.md (binding design standard).
+ * Values below are direct OKLCH conversions of the hex values in README.md
+ * section 2 ("Color"), computed from the OKLab formulas (Bjorn Ottosson) so
+ * they round-trip to the exact same sRGB the README specifies. Hex source is
+ * noted per variable. Any token NOT literally named in README.md (e.g.
+ * --muted, the generic shadcn-style panel bg, and --destructive, a form/
+ * action error red distinct from the rationed --now signal) is a derived
+ * addition needed to drive shadcn-style primitives — kept in the same
+ * indigo-tinted neutral family as the rest of the palette and verified for
+ * WCAG AA (see contrast notes below and the task report).
+ */
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Brand & chrome — README §2.1 */
+  --background: oklch(0.985 0.004 91.4); /* --canvas #FBFAF7 */
+  --foreground: oklch(0.233 0.036 285.6); /* --ink #1C1B2E */
+  --muted-foreground: oklch(0.476 0.032 287.4); /* --ink-muted #5B5A6E */
+  --card: oklch(1 0 0); /* --surface #FFFFFF */
+  --border: oklch(0.932 0.012 296.3); /* --hairline #E9E7F0 */
+  --brand: oklch(0.457 0.215 277); /* --brand (iris) #4338CA */
+  --brand-foreground: oklch(1 0 0); /* --brand-ink #FFFFFF */
+
+  /* Derived — not literal README tokens, see file header */
+  --muted: oklch(0.956 0.011 297.6); /* #F1EFF7 — indigo-tinted panel bg */
+  --destructive: oklch(0.538 0.2 19.9); /* #C81E3A — form/action error red */
+
+  --ring: var(--brand);
+  --radius: 0.875rem; /* inputs 14px — README §4 */
+
+  /* Signal colors — README §2.2 (status meaning only; --now is rationed to
+     at most one element on screen). Raw accent tokens: contrast depends on
+     pairing (e.g. dark --ink text reads 4.87–5.40:1 on these, white does
+     not) — verify per use when consumed by a future slice (e.g. the "now"
+     card). Not yet mapped into @theme — no current component reads them. */
+  --now: oklch(0.677 0.182 41.9); /* #F0682B */
+  --upcoming: oklch(0.457 0.215 277); /* #4338CA (== --brand) */
+  --ended: oklch(0.674 0.031 296.5); /* #9893A8 */
+  --success: oklch(0.616 0.137 157.2); /* #1F9D63 */
+
+  /* Track palette — README §2.3, fixed 6-color ring assigned round-robin to
+     tracks/stages. Raw accent tokens, same caveat as signal colors above. */
+  --track-1: oklch(0.457 0.215 277); /* #4338CA iris */
+  --track-2: oklch(0.611 0.149 244.7); /* #0E8AD6 blue */
+  --track-3: oklch(0.616 0.137 157.2); /* #1F9D63 green */
+  --track-4: oklch(0.581 0.168 4.6); /* #C7456E rose */
+  --track-5: oklch(0.726 0.15 71.4); /* #E0941A amber */
+  --track-6: oklch(0.542 0.194 295.6); /* #7C4DD1 violet */
+}
+
+.dark {
+  /* Dark-mode equivalents — README.md does not yet specify dark hex values
+     (the doc calls dark "future"); these were authored to keep the same
+     indigo-tinted neutral family and brand hue (~277-283), then iterated
+     against the WCAG formulas until every consumed pair cleared AA (4.5:1
+     text / 3:1 UI). See the task report for the full contrast table. */
+  --background: oklch(0.202 0.02 289.1); /* #16151F */
+  --foreground: oklch(0.944 0.014 295.3); /* #EDEBF5 */
+  --muted-foreground: oklch(0.747 0.03 292.2); /* #ADAABF */
+  --card: oklch(0.239 0.027 287.5); /* #1E1D2B */
+  --border: oklch(0.318 0.039 290.2); /* #322F45 */
+  --brand: oklch(0.6 0.177 283); /* #756CE5 — lightened iris for dark bg */
+  --brand-foreground: oklch(0.152 0.021 288.2); /* #0B0A14 */
+
+  --muted: oklch(0.261 0.032 286.7); /* #232233 */
+  --destructive: oklch(0.657 0.195 14.9); /* #F0506A — lightened error red */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-destructive: var(--destructive);
+  --color-ring: var(--ring);
+  --radius-lg: calc(var(--radius) + 0.375rem); /* 20px cards — README §4 */
+}
