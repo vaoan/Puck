@@ -51,5 +51,16 @@ to **Telegram and email**.
 ## Current status
 
 - Building order: **1 → 2 → 3 → 4**.
-- **Now brainstorming sub-project 1.** Its design spec will land in
-  `docs/superpowers/specs/`.
+- **Sub-project 1 (Foundation) — ✅ complete & merged to `develop`.** 12 Supabase
+  migrations (identity/`user_profiles`, 28-key RBAC catalog, event → session →
+  occurrence domain, two-level delegation, RLS, severe-action RPCs, audit) plus
+  `@puck/auth` (permission catalog + `matchesPermissions`) and `@puck/db`
+  (generated types). Spec + plan in `docs/superpowers/{specs,plans}/`.
+- **Sub-project 2 (Authoring web app) — 🔨 in progress** on branch
+  `feat/GH-5_App-Shell-Auth`. Slice 1 (app shell + social auth + account) is a
+  13-task TDD plan; **tasks 1–2 of 13 done** (`apps/web` scaffold + vitest/RTL
+  harness; `@puck/ui` = Puck OKLCH tokens + base shadcn components). Task 3
+  (Supabase clients + env) is next. Plan:
+  `docs/superpowers/plans/2026-06-30-puck-web-shell-auth.md`.
+- **Sub-projects 3 (reminder engine) & 4 (Telegram bot) — not started.** #3
+  re-grounds on #1; #4 has no spec yet.
