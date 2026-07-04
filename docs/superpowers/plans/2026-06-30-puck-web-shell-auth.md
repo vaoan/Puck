@@ -781,7 +781,7 @@ git add apps/web && git commit -m "feat(web): next-intl i18n (en/es, locale-pref
 - Consumes: `createBrowserSupabaseClient`.
 - Produces: `useSupabase()`; `useAuth()` → `{ user, signInWithProvider(provider, redirectTo?), signOut() }`; `<SocialLoginButtons returnTo?>`.
 
-- [ ] **Step 1: hooks**
+- [x] **Step 1: hooks**
       `useSupabase.ts`:
 
 ```ts
@@ -829,7 +829,7 @@ export function useAuth() {
 }
 ```
 
-- [ ] **Step 2: RED test for SocialLoginButtons**
+- [x] **Step 2: RED test for SocialLoginButtons**
       `SocialLoginButtons.test.tsx`:
 
 ```tsx
@@ -860,7 +860,7 @@ describe("SocialLoginButtons", () => {
 
 Run → RED.
 
-- [ ] **Step 3: Implement + login page**
+- [x] **Step 3: Implement + login page**
       `SocialLoginButtons.tsx` (adapt `candystore/.../SocialLoginButtons.tsx`):
 
 ```tsx
