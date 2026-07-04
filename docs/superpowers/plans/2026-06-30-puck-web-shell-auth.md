@@ -2,6 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Progress (as of 2026-07-04):** Tasks **1–4 done; all gates green (test,
+> typecheck, lint, format, build); Task 5 is next.** Done: `apps/web` scaffold +
+> vitest/RTL harness + smoke test (`718163e`), lockfile fix (`fbcb953`), `@puck/ui`
+> — Puck OKLCH tokens + base shadcn components (`3feb11f`), app-local Supabase
+> clients + env config (Task 3, RED→GREEN on `deriveProjectRef`), and next-intl
+> i18n (Task 4 — en/es routing/request/messages + provider-wrapped locale layout;
+> `next build` now green). Remaining: Tasks 5–13 (OAuth login/callback, middleware,
+> app shell, account feature, E2E, docs sweep).
+
 **Goal:** Stand up `apps/web` — a Next.js authoring app where an organizer logs in with Google/Discord, lands in a protected responsive shell, and views/edits their profile (`user_profiles`) under RLS — proving the whole stack (auth → Supabase → RLS → design system → tests) end-to-end.
 
 **Architecture:** Next.js 16 App Router app talking **directly to Supabase** (the foundation's RLS + RPCs; no orval/REST). Mirrors CandyStore's `apps/auth` patterns, but **app-local** (Puck has one web app, so Supabase clients/i18n/tid live in `apps/web/src/shared/` rather than a shared package) and **middleware-level** route protection. Clean-architecture feature layout per `.claude/rules/architecture.md`.
@@ -82,7 +91,7 @@ apps/web/                            # NEW — @puck/web
 
 - Produces: the `@puck/web` workspace; `tid(id: string): { 'data-testid'?: string }`; `renderWithProviders(ui)` test util; the locale layout shell.
 
-- [ ] **Step 1: Create the package + install deps**
+- [x] **Step 1: Create the package + install deps**
 
 `apps/web/package.json` (adapt versions from `candystore/apps/auth/package.json` — Next 16.2.x, React 19.2.x):
 
@@ -115,7 +124,7 @@ pnpm --filter @puck/web add -D typescript @types/react @types/react-dom @types/n
 
 Expected: installs; `@puck/ui` will not resolve until Task 2 creates it — that's fine for now (it's referenced, created next). If install hard-fails on the missing `@puck/ui`, temporarily omit it here and add it at the end of Task 2.
 
-- [ ] **Step 2: tsconfig + next.config + postcss**
+- [x] **Step 2: tsconfig + next.config + postcss**
 
 `apps/web/tsconfig.json` (extend base; aliases mirror `candystore/apps/auth/tsconfig.json`):
 
@@ -164,7 +173,7 @@ export default withNextIntl(nextConfig);
 export default { plugins: { "@tailwindcss/postcss": {} } };
 ```
 
-- [ ] **Step 3: Root layout + globals + locale layout + placeholder page**
+- [x] **Step 3: Root layout + globals + locale layout + placeholder page**
 
 `apps/web/src/app/layout.tsx`:
 
@@ -225,7 +234,7 @@ export default function HomePage() {
 }
 ```
 
-- [ ] **Step 4: tid() util + test harness**
+- [x] **Step 4: tid() util + test harness**
 
 `apps/web/src/shared/infrastructure/config/tid.ts` (simplified from `candystore/packages/shared/src/utils/tid.ts`):
 
@@ -295,7 +304,7 @@ export function renderWithProviders(ui: ReactElement) {
 }
 ```
 
-- [ ] **Step 5: Write the smoke test (RED)**
+- [x] **Step 5: Write the smoke test (RED)**
 
 `apps/web/src/app/[locale]/page.test.tsx`:
 
@@ -313,12 +322,12 @@ describe("HomePage", () => {
 });
 ```
 
-- [ ] **Step 6: Run RED → implement is already in place → GREEN**
+- [x] **Step 6: Run RED → implement is already in place → GREEN**
 
 Run: `pnpm --filter @puck/web test`
 Expected: GREEN (page + tid + harness all present). If RED, fix the failing import/path before proceeding.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/web pnpm-lock.yaml
@@ -337,7 +346,7 @@ git commit -m "feat(web): scaffold apps/web + vitest harness + smoke test [GH-5]
 
 - Produces: `cn(...inputs)`, `Button`, `Input`, `Label`, `Skeleton`, `Card` from `@puck/ui`; the `@puck/ui/globals` stylesheet (Puck tokens).
 
-- [ ] **Step 1: Package shell + cn (RED test first)**
+- [x] **Step 1: Package shell + cn (RED test first)**
 
 `packages/ui/package.json`:
 
@@ -389,7 +398,7 @@ export function cn(...inputs: ClassValue[]) {
 
 Run → GREEN.
 
-- [ ] **Step 2: Author Puck design tokens (`styles/`)**
+- [x] **Step 2: Author Puck design tokens (`styles/`)**
 
 Translate `docs/design/README.md` tokens to OKLCH. `packages/ui/src/styles/theme.css` declares `:root` + `.dark` CSS variables and an `@theme inline` block mapping `--color-*` to them. Use the README's iris brand + functional palette. Minimum token set needed by slice 1:
 
@@ -451,7 +460,7 @@ Translate `docs/design/README.md` tokens to OKLCH. `packages/ui/src/styles/theme
 
 > Verify WCAG contrast (`tailwind.md`) for `foreground`/`background`, `brand`/`brand-foreground`, `muted`/`muted-foreground` in BOTH `:root` and `.dark`.
 
-- [ ] **Step 3: Base components (Button with RED test, then Input/Label/Skeleton/Card)**
+- [x] **Step 3: Base components (Button with RED test, then Input/Label/Skeleton/Card)**
 
 `packages/ui/src/components/button.test.tsx`:
 
@@ -521,7 +530,7 @@ export function Button({
 
 Add `Input`, `Label` (Radix), `Skeleton`, `Card` as small presentational components (one per file). `packages/ui/src/index.ts` re-exports all + `cn`. Run `pnpm --filter @puck/ui test` → GREEN.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add packages/ui pnpm-lock.yaml
@@ -541,7 +550,7 @@ git commit -m "feat(ui): @puck/ui — Puck design tokens (OKLCH) + base shadcn c
 - Consumes: `Database` from `@puck/db`.
 - Produces: `createBrowserSupabaseClient(): SupabaseClient<Database>`, `createServerSupabaseClient(): Promise<SupabaseClient<Database>>`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_COOKIE_KEY`.
 
-- [ ] **Step 1: env + config (RED test on cookie-key derivation)**
+- [x] **Step 1: env + config (RED test on cookie-key derivation)**
 
 `apps/web/src/shared/infrastructure/config/env.ts`:
 
@@ -584,7 +593,7 @@ export const SUPABASE_COOKIE_KEY = `sb-${deriveProjectRef(SUPABASE_URL)}-auth-to
 
 Run → GREEN.
 
-- [ ] **Step 2: cookies + clients (adapt CandyStore, drop multi-app domain)**
+- [x] **Step 2: cookies + clients (adapt CandyStore, drop multi-app domain)**
 
 `apps/web/src/shared/infrastructure/supabase/cookies.ts` — localhost-friendly merge (no shared root domain; `secure` only in prod):
 
@@ -662,7 +671,7 @@ git add apps/web && git commit -m "feat(web): app-local supabase browser/server 
 
 - Produces: `routing` (locales `["en","es"]`, default `en`), localized `Link`/`redirect`/`usePathname`/`useRouter`; message namespaces `common`, `auth`, `account`, `nav`.
 
-- [ ] **Step 1: routing + request + messages**
+- [x] **Step 1: routing + request + messages**
 
 `apps/web/src/shared/infrastructure/i18n/index.ts`:
 
@@ -721,7 +730,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
 }
 ```
 
-- [ ] **Step 2: Wrap provider + RED test**
+- [x] **Step 2: Wrap provider + RED test**
 
 Update `[locale]/layout.tsx` to fetch messages (`getMessages()`) and wrap children in `<NextIntlClientProvider messages={messages}>` (keep the `<html>`/`<body>`).
 
