@@ -1,0 +1,23 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "saved": "Saved",
+    "error": "Something went wrong"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in to Puck",
+      "google": "Continue with Google",
+      "discord": "Continue with Discord"
+    },
+    "signOut": "Sign out"
+  },
+  "account": {
+    "title": "Account",
+    "displayName": "Display name",
+    "avatarUrl": "Avatar URL",
+    "email": "Email"
+  },
+  "nav": { "account": "Account" }
+}

@@ -21,26 +21,37 @@ times: 30 / 15 / 10 / 5 min before, and at start). Notifications go out over
 See `README.md` for the product overview and `docs/2026-06-19-platform-roadmap.md`
 for the decomposition.
 
-## Current state — Foundation (#1) complete; sub-projects 2–4 not yet built
+## Current state — Foundation (#1) complete; web app (#2) in progress
 
-> ⚠️ **Sub-projects 2–4 are not yet implemented.** The Foundation (#1) is done:
+> ⚠️ **Sub-projects 3–4 are not yet implemented.** The Foundation (#1) is done:
 > all 12 DB migrations (identity, RBAC, domain, delegation, RLS, RPCs, audit),
 > `packages/auth` (permission key catalog + `matchesPermissions` helper), and
-> `packages/db` (generated Supabase types). **Do not assume `apps/*` exist** until
-> sub-project #2 is built.
+> `packages/db` (generated Supabase types).
+>
+> **Sub-project #2 (`apps/web`) is in progress** on branch
+> `feat/GH-5_App-Shell-Auth` — slice 1 (app shell + social auth + account),
+> tracked by `docs/superpowers/plans/2026-06-30-puck-web-shell-auth.md` (13
+> tasks). **Built so far:** `packages/ui` (`@puck/ui` — Puck OKLCH design tokens +
+> base shadcn components: Button/Input/Label/Skeleton/Card) and the `apps/web`
+> scaffold (Next.js 16 + vitest/RTL harness + `tid()` + locale layout + smoke
+> test). **Not yet built:** Supabase clients, next-intl i18n, OAuth login/callback,
+> middleware route protection, the app shell, and the account feature (tasks
+> 3–13). Don't assume those modules exist — check the plan's checkbox state.
 
 Puck is decomposed into four sub-projects, built in dependency order **1 → 2 → 3
 → 4**:
 
-| #     | Sub-project                               | Scope                                                                                               | Status                                                    |
-| ----- | ----------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| **1** | **Foundation** — identity + RBAC + domain | Supabase Auth, users, event/session/occurrence schema, owner/delegate permissions, RLS, audit       | ✅ complete (12 migrations + packages/auth + packages/db) |
-| **2** | **Authoring web app** (`apps/web`)        | Next.js admin: create/edit events & sessions, per-day view, recurrence, document uploads, delegates | no spec yet                                               |
-| **3** | **Notification engine**                   | two-level subscriptions, pgmq + pg_cron scheduling, fan-out, dedupe, Telegram/email delivery        | needs re-grounding on #1                                  |
-| **4** | **Telegram consumer bot**                 | discovery, browse schedule, subscribe, set reminder offsets, link Telegram ↔ user                   | no spec yet                                               |
+| #     | Sub-project                               | Scope                                                                                               | Status                                                     |
+| ----- | ----------------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **1** | **Foundation** — identity + RBAC + domain | Supabase Auth, users, event/session/occurrence schema, owner/delegate permissions, RLS, audit       | ✅ complete (12 migrations + packages/auth + packages/db)  |
+| **2** | **Authoring web app** (`apps/web`)        | Next.js admin: create/edit events & sessions, per-day view, recurrence, document uploads, delegates | 🔨 in progress — slice 1 (shell + auth), tasks 1–2/13 done |
+| **3** | **Notification engine**                   | two-level subscriptions, pgmq + pg_cron scheduling, fan-out, dedupe, Telegram/email delivery        | needs re-grounding on #1                                   |
+| **4** | **Telegram consumer bot**                 | discovery, browse schedule, subscribe, set reminder offsets, link Telegram ↔ user                   | no spec yet                                                |
 
-The foundation (#1) spec and plan live in `docs/superpowers/specs/` and
-`docs/superpowers/plans/`. Read them before implementing #1.
+Specs and plans live in `docs/superpowers/specs/` and `docs/superpowers/plans/`
+— for #1 (foundation) and #2 (web app slice 1). The active plan is
+`docs/superpowers/plans/2026-06-30-puck-web-shell-auth.md`; read it (and its
+`specs/` design doc) before continuing #2.
 
 ## Repo boilerplate
 
@@ -126,6 +137,9 @@ _These describe the architecture to build toward; no code implements them yet._
   git. `secretlint` runs pre-commit.
 - **Tests:** Vitest, colocated as `*.test.ts`. Core domain logic is tested with
   in-memory fakes (no DB needed) — keep it that way; it's the fast safety net.
+- **TDD is the default.** Write every feature and bugfix **test-first**: a failing
+  test (RED) → minimal code to pass (GREEN) → refactor. Don't write implementation
+  before its test. See `.claude/rules/testing.md`.
 
 ## Commands
 
@@ -150,6 +164,7 @@ pnpm test:db            # DB-integration tests — requires local Supabase runni
 
 ## Definition of done for a change
 
+0. Built test-first (TDD): a failing test preceded the implementation.
 1. `pnpm typecheck` clean.
 2. `pnpm test` green (add/adjust tests for new logic).
 3. `pnpm lint` and `pnpm format:check` clean.

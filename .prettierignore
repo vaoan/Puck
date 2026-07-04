@@ -3,6 +3,9 @@ assets
 dist
 coverage
 .turbo
+.next
+**/.next/**
+next-env.d.ts
 pnpm-lock.yaml
 **/generated/**
 **/database.types.ts

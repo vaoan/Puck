@@ -5,6 +5,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 import tsParser from "@typescript-eslint/parser";
 import i18next from "eslint-plugin-i18next";
+import jsa11y from "eslint-plugin-jsx-a11y";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import unusedImports from "eslint-plugin-unused-imports";
@@ -56,6 +57,7 @@ const eslintConfig = defineConfig([
   // Accessibility (jsx-a11y) — WCAG AA compliance
   {
     files: [`${APP_SRC}/**/*.{tsx,jsx}`, `${PKG_SRC}/**/*.{tsx,jsx}`],
+    plugins: { "jsx-a11y": jsa11y },
     rules: {
       "jsx-a11y/alt-text": "error",
       "jsx-a11y/aria-props": "error",

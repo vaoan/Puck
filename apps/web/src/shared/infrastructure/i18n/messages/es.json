@@ -1,0 +1,23 @@
+{
+  "common": {
+    "loading": "Cargando…",
+    "save": "Guardar",
+    "saved": "Guardado",
+    "error": "Algo salió mal"
+  },
+  "auth": {
+    "login": {
+      "title": "Inicia sesión en Puck",
+      "google": "Continuar con Google",
+      "discord": "Continuar con Discord"
+    },
+    "signOut": "Cerrar sesión"
+  },
+  "account": {
+    "title": "Cuenta",
+    "displayName": "Nombre visible",
+    "avatarUrl": "URL del avatar",
+    "email": "Correo electrónico"
+  },
+  "nav": { "account": "Cuenta" }
+}

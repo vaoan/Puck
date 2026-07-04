@@ -6,6 +6,11 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# Next.js
+.next/
+next-env.d.ts
+out/
+
 # turbo
 .turbo/
 

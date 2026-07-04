@@ -9,7 +9,7 @@
 <br><br>
 
 [![CI](https://github.com/vaoan/Puck/actions/workflows/ci.yml/badge.svg)](https://github.com/vaoan/Puck/actions/workflows/ci.yml)
-&nbsp;![Status](https://img.shields.io/badge/status-planning-E8A33D?style=flat-square)
+&nbsp;![Status](https://img.shields.io/badge/status-in%20development-0E7C73?style=flat-square)
 &nbsp;![Node](https://img.shields.io/badge/Node-24-0E7C73?style=flat-square)
 &nbsp;![pnpm](https://img.shields.io/badge/pnpm-10-0E7C73?style=flat-square)
 &nbsp;![TypeScript](https://img.shields.io/badge/TypeScript-strict-0E7C73?style=flat-square)
@@ -70,17 +70,21 @@ all-powerful admin.
 Puck is one platform decomposed into four sub-projects, each with its own
 spec → plan → build cycle. They ship in dependency order.
 
-| #      | Sub-project           | What it delivers                                                                               | Status               |
-| ------ | --------------------- | ---------------------------------------------------------------------------------------------- | -------------------- |
-| **01** | **Foundation**        | Identity, the CandyStore-style RBAC, and the event → session → occurrence domain (RLS + audit) | 📐 spec + plan ready |
-| **02** | **Authoring web app** | Next.js admin: build the schedule, manage delegates, upload documents, moderate                | 💭 idea              |
-| **03** | **Reminder engine**   | Two-level subscriptions, `pgmq` + `pg_cron` scheduling, fan-out, dedupe, delivery              | 💭 idea              |
-| **04** | **Telegram bot**      | Discover events, browse the schedule, subscribe, set lead times, link your account             | 💭 idea              |
+| #      | Sub-project           | What it delivers                                                                               | Status         |
+| ------ | --------------------- | ---------------------------------------------------------------------------------------------- | -------------- |
+| **01** | **Foundation**        | Identity, the CandyStore-style RBAC, and the event → session → occurrence domain (RLS + audit) | ✅ complete    |
+| **02** | **Authoring web app** | Next.js admin: build the schedule, manage delegates, upload documents, moderate                | 🔨 in progress |
+| **03** | **Reminder engine**   | Two-level subscriptions, `pgmq` + `pg_cron` scheduling, fan-out, dedupe, delivery              | 💭 idea        |
+| **04** | **Telegram bot**      | Discover events, browse the schedule, subscribe, set lead times, link your account             | 💭 idea        |
 
-> **Status: planning.** This repository currently holds the **design docs and the
-> toolchain** — the ideas and the rails, not the implementation. Start with
+> **Status: in development.** The **Foundation (01)** is built — 12 Supabase
+> migrations (identity, RBAC, event → session → occurrence domain, RLS, audit)
+> plus the `@puck/auth` and `@puck/db` packages. The **Authoring web app (02)** is
+> now underway on its first slice — app shell + social auth + account — with
+> `@puck/ui` (design tokens + base components) and the `apps/web` scaffold landed.
+> Start with
 > [`docs/2026-06-19-platform-roadmap.md`](docs/2026-06-19-platform-roadmap.md),
-> then the foundation spec and plan under [`docs/superpowers/`](docs/superpowers/).
+> then the specs and plans under [`docs/superpowers/`](docs/superpowers/).
 
 ## Design principles
 
@@ -110,8 +114,9 @@ pnpm db:start     # local Supabase: Postgres + pgmq + pg_cron + Auth
 ```
 
 A pnpm + Turbo monorepo with strict TypeScript (ESM / NodeNext), zod at every
-boundary, and Vitest. The scripts above are wired and waiting; they no-op until
-sub-project 01 lands the first package.
+boundary, and Vitest. The `@puck/auth`, `@puck/db`, and `@puck/ui` packages plus
+the `apps/web` scaffold are in place, so the scripts above now run against real
+workspaces.
 
 > ⚠️ **Puck uses its own Supabase project.** Never point `SUPABASE_URL` /
 > `SUPABASE_SERVICE_ROLE_KEY` at CandyStore or any shared / production database.
