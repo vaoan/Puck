@@ -7,7 +7,7 @@
     "moduleResolution": "bundler",
     "noEmit": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@ui/*": ["./src/*"]
     }
   },
   "include": ["src/**/*"]
