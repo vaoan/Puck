@@ -19,5 +19,5 @@
     "avatarUrl": "URL del avatar",
     "email": "Correo electrónico"
   },
-  "nav": { "account": "Cuenta" }
+  "nav": { "brand": "Puck", "account": "Cuenta" }
 }
