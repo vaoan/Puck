@@ -17,6 +17,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@ui": path.resolve(__dirname, "../../packages/ui/src"),
       "@puck/ui": path.resolve(__dirname, "../../packages/ui/src"),
       "@puck/db": path.resolve(__dirname, "../../packages/db/src"),
       "@puck/auth": path.resolve(__dirname, "../../packages/auth/src"),

@@ -19,5 +19,5 @@
     "avatarUrl": "Avatar URL",
     "email": "Email"
   },
-  "nav": { "account": "Account" }
+  "nav": { "brand": "Puck", "account": "Account" }
 }

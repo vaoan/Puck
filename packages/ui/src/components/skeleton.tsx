@@ -1,6 +1,5 @@
+import { cn } from "@ui/utils/cn";
 import type { HTMLAttributes } from "react";
-
-import { cn } from "@/utils/cn";
 
 type SkeletonProps = HTMLAttributes<HTMLDivElement>;
 

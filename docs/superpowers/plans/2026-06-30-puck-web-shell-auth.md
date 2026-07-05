@@ -2,14 +2,17 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Progress (as of 2026-07-04):** Tasks **1–4 done; all gates green (test,
-> typecheck, lint, format, build); Task 5 is next.** Done: `apps/web` scaffold +
-> vitest/RTL harness + smoke test (`718163e`), lockfile fix (`fbcb953`), `@puck/ui`
-> — Puck OKLCH tokens + base shadcn components (`3feb11f`), app-local Supabase
-> clients + env config (Task 3, RED→GREEN on `deriveProjectRef`), and next-intl
-> i18n (Task 4 — en/es routing/request/messages + provider-wrapped locale layout;
-> `next build` now green). Remaining: Tasks 5–13 (OAuth login/callback, middleware,
-> app shell, account feature, E2E, docs sweep).
+> **Progress (as of 2026-07-04):** Tasks **1–4 merged to `develop`** (PR #6,
+> squash `d0256c2`). **Tasks 5–8 done on branch `feat/GH-5_Auth-Login-Account`**
+> (all gates green: 13 unit tests, typecheck, lint, format; build passes when
+> `NEXT_PUBLIC_SUPABASE_*` are provided — CI runs no build job): Task 5 OAuth login
+> page + `SocialLoginButtons`, Task 6 OAuth callback route (safe-`next`), Task 7
+> middleware (session refresh + `(app)` protection via `needsAuthRedirect`), Task 8
+> app shell (Providers/Nav/AppShell + protected `(app)` layout). Also `fix(ui)`:
+> switched `@puck/ui` internals from `@/` to the `@ui/*` alias so components resolve
+> when consumed as source. **Task 9 (account domain + queries) is next.** Deferred:
+> `[locale]/page.tsx → /account` redirect until the account route exists (Task 11).
+> Remaining: Tasks 9–13 (account feature, E2E, docs/env sweep).
 
 **Goal:** Stand up `apps/web` — a Next.js authoring app where an organizer logs in with Google/Discord, lands in a protected responsive shell, and views/edits their profile (`user_profiles`) under RLS — proving the whole stack (auth → Supabase → RLS → design system → tests) end-to-end.
 
@@ -781,7 +784,7 @@ git add apps/web && git commit -m "feat(web): next-intl i18n (en/es, locale-pref
 - Consumes: `createBrowserSupabaseClient`.
 - Produces: `useSupabase()`; `useAuth()` → `{ user, signInWithProvider(provider, redirectTo?), signOut() }`; `<SocialLoginButtons returnTo?>`.
 
-- [ ] **Step 1: hooks**
+- [x] **Step 1: hooks**
       `useSupabase.ts`:
 
 ```ts
@@ -829,7 +832,7 @@ export function useAuth() {
 }
 ```
 
-- [ ] **Step 2: RED test for SocialLoginButtons**
+- [x] **Step 2: RED test for SocialLoginButtons**
       `SocialLoginButtons.test.tsx`:
 
 ```tsx
@@ -860,7 +863,7 @@ describe("SocialLoginButtons", () => {
 
 Run → RED.
 
-- [ ] **Step 3: Implement + login page**
+- [x] **Step 3: Implement + login page**
       `SocialLoginButtons.tsx` (adapt `candystore/.../SocialLoginButtons.tsx`):
 
 ```tsx
@@ -937,7 +940,7 @@ git add apps/web && git commit -m "feat(web): OAuth login page + social buttons 
 - Consumes: `createServerSupabaseClient`.
 - Produces: `GET(request)` → exchanges `?code` for a session, redirects to a safe `?next` (default `/en/account`).
 
-- [ ] **Step 1: RED test**
+- [x] **Step 1: RED test**
       `route.test.ts` (mock the server client + `next/server`):
 
 ```ts
@@ -966,7 +969,7 @@ describe("oauth callback", () => {
 
 Run → RED.
 
-- [ ] **Step 2: Implement (adapt `candystore/packages/api/src/supabase/callback.ts`, simplified)**
+- [x] **Step 2: Implement (adapt `candystore/packages/api/src/supabase/callback.ts`, simplified)**
 
 ```ts
 import { NextResponse, type NextRequest } from "next/server";
@@ -1010,7 +1013,7 @@ git add apps/web && git commit -m "feat(web): OAuth callback route (exchangeCode
 
 - Produces: middleware that refreshes the Supabase session, runs next-intl, and redirects unauthenticated requests for `(app)` paths to `/<locale>/login?returnTo=…`.
 
-- [ ] **Step 1: protection-decision unit (RED)**
+- [x] **Step 1: protection-decision unit (RED)**
       Extract the pure decision so it's testable. `middleware-session.test.ts`:
 
 ```ts
@@ -1028,7 +1031,7 @@ describe("needsAuthRedirect", () => {
 
 Run → RED.
 
-- [ ] **Step 2: Implement decision + middleware**
+- [x] **Step 2: Implement decision + middleware**
       `middleware-session.ts`:
 
 ```ts
@@ -1110,7 +1113,7 @@ git add apps/web && git commit -m "feat(web): middleware — session refresh + (
 - Consumes: i18n `Link`, `tid`.
 - Produces: `<Providers>` (QueryClientProvider), `<AppShell>` (responsive nav frame), the protected `(app)` layout.
 
-- [ ] **Step 1: RED test for AppShell**
+- [x] **Step 1: RED test for AppShell**
       `AppShell.test.tsx`:
 
 ```tsx
@@ -1136,7 +1139,7 @@ describe("AppShell", () => {
 
 Run → RED.
 
-- [ ] **Step 2: Implement Providers, Nav, AppShell, layout**
+- [x] **Step 2: Implement Providers, Nav, AppShell, layout** _(page.tsx → /account redirect deferred to Task 11, when the account route exists)_
       `Providers.tsx` (`"use client"`, a `QueryClientProvider` with a stable client via `useState`). `Nav.tsx` (responsive top/bottom nav using `@puck/ui` + the design tokens; one item — Account — with `{...tid("app-nav")}` on the nav and `tid("nav-account")` on the link; uses i18n `Link` + `useTranslations("nav")`). `AppShell.tsx`:
 
 ```tsx
