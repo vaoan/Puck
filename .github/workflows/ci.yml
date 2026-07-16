@@ -245,13 +245,90 @@ jobs:
           if-no-files-found: ignore
 
   # ============================================
+  # Build (next build — catches build-only breakage)
+  #
+  # Unit tests, lint and typecheck do NOT run `next build`, so build-time
+  # failures (invalid segment config exports, RSC/client boundary errors,
+  # asset-loading regressions) slip through. This job closes that gap.
+  #
+  # The NEXT_PUBLIC_* values are non-secret placeholders: they only satisfy
+  # the zod env guard so the build can compile. No real project is contacted
+  # at build time, and these are never deployed.
+  # ============================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: changes
+    if: needs.changes.outputs.docs-only == 'false'
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: "https://ci-build.supabase.co"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "ci-build-anon-key"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Restore Next.js build cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: apps/*/.next/cache
+          key: ${{ runner.os }}-nextjs-ci-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/**/*.ts', 'apps/**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-ci-${{ hashFiles('pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nextjs-ci-
+
+      - name: Build
+        run: |
+          set -euo pipefail
+
+          SELECT_OUTPUT=$(bash scripts/select-workspaces.sh \
+            "${{ needs.changes.outputs.web }}" \
+            "${{ needs.changes.outputs.api }}" \
+            "${{ needs.changes.outputs.worker }}" \
+            "${{ needs.changes.outputs.bot }}" \
+            "${{ needs.changes.outputs.packages }}" \
+            "${{ needs.changes.outputs.tooling }}")
+
+          RUN_ALL=$(echo "$SELECT_OUTPUT" | grep '^RUN_ALL=' | cut -d= -f2-)
+          APPS=$(echo "$SELECT_OUTPUT" | grep '^APPS=' | cut -d= -f2-)
+
+          if [ "$RUN_ALL" = "true" ]; then
+            echo "Running full build because packages/tooling changed."
+            pnpm run build
+            exit 0
+          fi
+
+          if [ -z "$APPS" ]; then
+            echo "No workspace apps selected for build. Skipping."
+            exit 0
+          fi
+
+          for APP in $APPS; do
+            pnpm --filter "$APP" build
+          done
+
+  # ============================================
   # CI Gate — single required status check.
   #
   # Aggregates every job above into ONE context that branch protection
   # requires. It ALWAYS runs (if: always()) so it always reports a result,
   # and it fails if any upstream job failed or was cancelled. A legitimately
-  # skipped job (e.g. docs-only PRs skip quality/unit-tests) does NOT fail
-  # the gate. This is what makes "no merge unless checks pass" airtight:
+  # skipped job (e.g. docs-only PRs skip quality/unit-tests/build) does NOT
+  # fail the gate. This is what makes "no merge unless checks pass" airtight:
   # protection requires this one context, and new jobs are covered simply by
   # adding them to `needs` below.
   # ============================================
@@ -259,12 +336,12 @@ jobs:
     name: CI Gate
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [changes, quality, unit-tests]
+    needs: [changes, quality, unit-tests, build]
     if: always()
     steps:
       - name: Verify no required job failed
         env:
-          RESULTS: "${{ needs.changes.result }} ${{ needs.quality.result }} ${{ needs.unit-tests.result }}"
+          RESULTS: "${{ needs.changes.result }} ${{ needs.quality.result }} ${{ needs.unit-tests.result }} ${{ needs.build.result }}"
         run: |
           echo "Upstream job results: $RESULTS"
           for r in $RESULTS; do
