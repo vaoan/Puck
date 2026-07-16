@@ -28,25 +28,40 @@ for the decomposition.
 > `packages/auth` (permission key catalog + `matchesPermissions` helper), and
 > `packages/db` (generated Supabase types).
 >
-> **Sub-project #2 (`apps/web`) is in progress** on branch
-> `feat/GH-5_App-Shell-Auth` — slice 1 (app shell + social auth + account),
-> tracked by `docs/superpowers/plans/2026-06-30-puck-web-shell-auth.md` (13
-> tasks). **Built so far:** `packages/ui` (`@puck/ui` — Puck OKLCH design tokens +
-> base shadcn components: Button/Input/Label/Skeleton/Card) and the `apps/web`
-> scaffold (Next.js 16 + vitest/RTL harness + `tid()` + locale layout + smoke
-> test). **Not yet built:** Supabase clients, next-intl i18n, OAuth login/callback,
-> middleware route protection, the app shell, and the account feature (tasks
-> 3–13). Don't assume those modules exist — check the plan's checkbox state.
+> **Sub-project #2 (`apps/web`) is in progress** — slice 1 (app shell + social
+> auth + account), tracked by
+> `docs/superpowers/plans/2026-06-30-puck-web-shell-auth.md` (13 tasks).
+> **Merged to `develop` (tasks 1–8, PRs #6 + #7):** `packages/ui` (`@puck/ui` —
+> Puck OKLCH design tokens + base shadcn components), the `apps/web` scaffold
+> (Next.js 16 + vitest/RTL + `tid()`), Supabase browser/server clients + env
+> config, next-intl i18n (`[locale]`, en/es), OAuth login page + callback route,
+> middleware session refresh + `(app)` route protection, and the protected app
+> shell (nav + providers). **All 13 slice-1 tasks are now done on branch
+> `feat/GH-5_Account-Feature` (uncommitted):** the account feature (tasks 9–11 —
+> domain + column-scoped profile queries, `useProfile`/`useUpdateProfile`,
+> `ProfileForm` + `AccountPage` + `SignOutButton` + `/account`, all TDD), the
+> Playwright E2E suite (task 12 — protected redirect, seeded-session account edit
+> proving DB persistence, axe a11y), and the docs/DoD sweep (task 13). Full sweep
+> is green: format, lint, typecheck, 30 unit tests, `next build`, 4 E2E.
+>
+> ⚠️ **The E2E caught several bugs in the merged shell/auth (tasks 5–8) that unit
+> tests + CI missed** (CI has no build job): middleware was at the wrong path and
+> wrong name for Next 16 → auth never ran (now `src/proxy.ts` exporting `proxy`);
+> its `export const config = { matcher }` broke `next build` and hydration (assets
+> 404'd at `/en/_next/*`) → fixed by filtering excluded paths inside `proxy()`;
+> bare `/` 404'd → added `app/page.tsx` redirect; no `<title>` → added i18n
+> `generateMetadata`. See the plan's Task 12 note. Don't assume later modules
+> exist — check the plan's checkbox state.
 
 Puck is decomposed into four sub-projects, built in dependency order **1 → 2 → 3
 → 4**:
 
-| #     | Sub-project                               | Scope                                                                                               | Status                                                     |
-| ----- | ----------------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| **1** | **Foundation** — identity + RBAC + domain | Supabase Auth, users, event/session/occurrence schema, owner/delegate permissions, RLS, audit       | ✅ complete (12 migrations + packages/auth + packages/db)  |
-| **2** | **Authoring web app** (`apps/web`)        | Next.js admin: create/edit events & sessions, per-day view, recurrence, document uploads, delegates | 🔨 in progress — slice 1 (shell + auth), tasks 1–2/13 done |
-| **3** | **Notification engine**                   | two-level subscriptions, pgmq + pg_cron scheduling, fan-out, dedupe, Telegram/email delivery        | needs re-grounding on #1                                   |
-| **4** | **Telegram consumer bot**                 | discovery, browse schedule, subscribe, set reminder offsets, link Telegram ↔ user                   | no spec yet                                                |
+| #     | Sub-project                               | Scope                                                                                               | Status                                                          |
+| ----- | ----------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| **1** | **Foundation** — identity + RBAC + domain | Supabase Auth, users, event/session/occurrence schema, owner/delegate permissions, RLS, audit       | ✅ complete (12 migrations + packages/auth + packages/db)       |
+| **2** | **Authoring web app** (`apps/web`)        | Next.js admin: create/edit events & sessions, per-day view, recurrence, document uploads, delegates | 🔨 in progress — slice 1 (shell + auth) 13/13 done, uncommitted |
+| **3** | **Notification engine**                   | two-level subscriptions, pgmq + pg_cron scheduling, fan-out, dedupe, Telegram/email delivery        | needs re-grounding on #1                                        |
+| **4** | **Telegram consumer bot**                 | discovery, browse schedule, subscribe, set reminder offsets, link Telegram ↔ user                   | no spec yet                                                     |
 
 Specs and plans live in `docs/superpowers/specs/` and `docs/superpowers/plans/`
 — for #1 (foundation) and #2 (web app slice 1). The active plan is

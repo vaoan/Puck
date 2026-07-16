@@ -1190,7 +1190,7 @@ git add apps/web && git commit -m "feat(web): responsive app shell + providers +
 - Consumes: `Database` from `@puck/db`, a `SupabaseClient`.
 - Produces: `Profile` (id, display_name, avatar_url, timestamps — **no email/provider**); `profileFormSchema` + `ProfileFormValues`; `fetchProfile(supabase, userId): Promise<Profile>`; `updateProfile(supabase, userId, values): Promise<Profile>`; `PROFILE_QUERY_KEY`.
 
-- [ ] **Step 1: domain types + schema + constants**
+- [x] **Step 1: domain types + schema + constants** _(added `schema.test.ts` — RED-first coverage for the zod transforms/https validation, beyond the plan)_
       `domain/types.ts`:
 
 ```ts
@@ -1234,7 +1234,7 @@ export const PROFILE_QUERY_KEY = "profile";
 export const PROFILE_STALE_TIME_MS = 30_000;
 ```
 
-- [ ] **Step 2: RED test for profile-queries (column-scoped select)**
+- [x] **Step 2: RED test for profile-queries (column-scoped select)** _(added `updateProfile` + error-path cases too)_
       `profile-queries.test.ts`:
 
 ```ts
@@ -1266,7 +1266,7 @@ describe("fetchProfile", () => {
 
 Run → RED.
 
-- [ ] **Step 3: Implement (adapt `candystore/.../account/infrastructure/profileQueries.ts`, but column-scoped — never `select("*")`)**
+- [x] **Step 3: Implement (adapt `candystore/.../account/infrastructure/profileQueries.ts`, but column-scoped — never `select("*")`)** _(GREEN — 10/10 tests pass, `pnpm --filter @puck/web typecheck` clean)_
       `infrastructure/profile-queries.ts`:
 
 ```ts
@@ -1329,7 +1329,7 @@ git add apps/web && git commit -m "feat(web): account domain + column-scoped pro
 - Consumes: `useSupabase`, `fetchProfile`/`updateProfile`, `PROFILE_QUERY_KEY`.
 - Produces: `useProfile(userId?)` (TanStack `useQuery`), `useUpdateProfile(userId)` (`useMutation`, invalidates the profile query).
 
-- [ ] **Step 1: RED test for useProfile (mock supabase module + query wrapper)**
+- [x] **Step 1: RED test for useProfile (mock supabase module + query wrapper)** _(also covers the `enabled:false` disabled path + `useUpdateProfile` mutation)_
       `useProfile.test.tsx`:
 
 ```tsx
@@ -1366,7 +1366,7 @@ describe("useProfile", () => {
 
 Run → RED.
 
-- [ ] **Step 2: Implement (adapt CandyStore hooks)**
+- [x] **Step 2: Implement (adapt CandyStore hooks)** _(GREEN — 13/13 account tests, typecheck clean)_
       `useProfile.ts`:
 
 ```ts
@@ -1429,7 +1429,7 @@ git add apps/web && git commit -m "feat(web): account application hooks (useProf
 - Consumes: `useAuth` (user + signOut), `useProfile`, `useUpdateProfile`, `profileFormSchema`, `@puck/ui`.
 - Produces: `<AccountPage>` (email read-only from session + the form + sign-out), `<ProfileForm>`.
 
-- [ ] **Step 1: RED test for ProfileForm (validation + submit)**
+- [x] **Step 1: RED test for ProfileForm (validation + submit)** _(also asserts non-https avatar blocks submit; added a TDD'd `SignOutButton.test.tsx` for the sign-out→redirect behavior)_
       `ProfileForm.test.tsx`:
 
 ```tsx
@@ -1464,7 +1464,8 @@ describe("ProfileForm", () => {
 
 Run → RED.
 
-- [ ] **Step 2: Implement ProfileForm, AccountPage, SignOutButton, route**
+- [x] **Step 2: Implement ProfileForm, AccountPage, SignOutButton, route** _(GREEN — 29/29 web tests, typecheck + lint + prettier clean. Note: `ProfileForm` wraps `handleSubmit((v) => onSubmit(v))` so RHF's event never leaks into `mutate`'s options.)_
+      **Deferred redirect resolved (Option A — keep middleware):** home `[locale]/page.tsx` now `redirect({ href: "/account", locale })` via next-intl (server component), as the interim landing until the events-dashboard slice replaces it (mirrors CandyStore admin's Dashboard-at-root). Its smoke test was rewritten from `tid("home")` to assert the redirect. Puck's merged middleware protection is retained — CandyStore's no-middleware layout-guard was considered and declined to avoid re-architecting merged tasks 5–8.
       `ProfileForm.tsx` (react-hook-form + zodResolver; `z.input`→`z.output` generics like CandyStore; `@puck/ui` `Input`/`Label`/`Button`; `{...tid("profile-display-name")}`, `{...tid("profile-save")}`; uses `useTranslations("account")`).
       `AccountPage.tsx` (`"use client"`):
 
@@ -1539,13 +1540,20 @@ git add apps/web && git commit -m "feat(web): account page (session email + prof
 - Consumes: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, the running app + local Supabase.
 - Produces: an `authenticatedPage` fixture seeding a real session via cookies.
 
-- [ ] **Step 1: Playwright config + session helper (adapt `candystore/apps/auth/e2e/**`)**
-`playwright.config.ts`: single `chromium`project,`baseURL`from env (default`http://localhost:5000`), `workers: 1`, `retries: process.env.CI ? 2 : 0`, a `webServer`running`pnpm --filter @puck/web dev`(or assume an already-running app + local Supabase, matching CandyStore's external-stack model — pick one and document it).`e2e/helpers/session.ts`— adapt`candystore/apps/auth/e2e/helpers/session.ts`, **simplified for Puck**: derive `sb-<ref>-auth-token`from`NEXT_PUBLIC_SUPABASE_URL`, base64-encode the session payload as `@supabase/ssr`does, set the cookie on`localhost`only (no shared root domain), including the`.0`chunk. No custom`auth_access_token` cookie.
+> **Bugs the E2E surfaced (all fixed in this task — none were caught by unit/typecheck/lint, and CI has no build job):**
+>
+> 1. **Middleware never ran.** It lived at `apps/web/middleware.ts`, but the app is under `src/`, so Next ignored it — `/account` was fully unprotected. Next 16 also renamed the convention `middleware`→`proxy`, so it's now `apps/web/src/proxy.ts` exporting `proxy`.
+> 2. **`export const config = { matcher }` broke `next build`** ("Invalid segment configuration export") AND caused next-intl to run on `/_next/*` requests → assets 404'd at `/en/_next/*` → **no client JS → no hydration → the account form never loaded**. Fixed by dropping the `config` export and filtering excluded paths inside `proxy()`.
+> 3. **Bare `/` returned 404** — added `app/page.tsx` → `/{defaultLocale}` (CandyStore-style, TDD'd).
+> 4. **No `<title>`** (WCAG 2.4.2 a11y fail) — added i18n `generateMetadata` (`meta` namespace, en/es).
+> 5. **eslint `boundaries` config** registered `proxy.ts` without `mode: "file"`, so it flagged the file — fixed in `eslint.config.mjs`.
 
-- [ ] **Step 2: Auth fixture (admin createUser + sign-in + inject)**
+- [x] **Step 1: Playwright config + session helper (adapt `candystore/apps/auth/e2e/**`)** _(single chromium project, `webServer: pnpm dev`, health check on `/en/login`; simplified session helper — localhost `url`-scoped cookie, `deriveProjectRef`mirror, no custom token cookie)_`playwright.config.ts`: single `chromium`project,`baseURL`from env (default`http://localhost:5000`), `workers: 1`, `retries: process.env.CI ? 2 : 0`, a `webServer`running`pnpm --filter @puck/web dev`(or assume an already-running app + local Supabase, matching CandyStore's external-stack model — pick one and document it).`e2e/helpers/session.ts`— adapt`candystore/apps/auth/e2e/helpers/session.ts`, **simplified for Puck**: derive `sb-<ref>-auth-token`from`NEXT_PUBLIC_SUPABASE_URL`, base64-encode the session payload as `@supabase/ssr`does, set the cookie on`localhost`only (no shared root domain), including the`.0`chunk. No custom`auth_access_token` cookie.
+
+- [x] **Step 2: Auth fixture (admin createUser + sign-in + inject)** _(`authenticatedPage` fixture; auto-created `user_profiles` via foundation triggers; deletes the user on teardown)_
       `e2e/fixtures/auth.fixture.ts` — adapt CandyStore's fixture: `supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, …)`; `createUser({ email_confirm: true })`; `signInWithPassword` to get tokens; `injectSession(context, …)`; cleanup deletes the user. (The foundation triggers auto-create the `user_profiles` row + consumer permissions on `createUser` — no manual profile seeding needed.)
 
-- [ ] **Step 3: Tests**
+- [x] **Step 3: Tests** _(auth-redirect + login a11y; seeded-session account edit that reloads to prove DB persistence + account a11y — 4/4 green via axe)_
       `auth-redirect.spec.ts` (no fixture — unauthenticated):
 
 ```ts
@@ -1577,7 +1585,7 @@ test("authenticated user edits display name", async ({
 
 Plus an axe a11y check on `/en/login` and `/en/account` (`@axe-core/playwright`; assert zero violations).
 
-- [ ] **Step 4: Run + commit**
+- [x] **Step 4: Run** _(local Supabase up, all 4 E2E green; commit pending user)_
       Bring up local Supabase + the app, then `pnpm --filter @puck/web test:e2e`. Expected: all green.
 
 ```bash
@@ -1592,10 +1600,10 @@ git add apps/web .env.example && git commit -m "test(web): slice-1 e2e — prote
 
 - Modify: `.env.example` (the `NEXT_PUBLIC_SUPABASE_*` + OAuth provider placeholders), `README.md` (apps/web run/test instructions + the OAuth-credentials prerequisite), `CLAUDE.md` (note `apps/web` exists + `pnpm --filter @puck/web dev`)
 
-- [ ] **Step 1: Env + README**
+- [x] **Step 1: Env + README** _(`.env.example`: NEXT_PUBLIC_SUPABASE_\*, OAuth placeholders, SERVICE*ROLE E2E note; README `apps/web` run/test section)*
       Add to `.env.example`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and **commented** `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID/SECRET`, `SUPABASE_AUTH_EXTERNAL_DISCORD_CLIENT_ID/SECRET` (placeholders only), plus `SUPABASE_SERVICE_ROLE_KEY` (E2E-only, with a comment). README: how to run `apps/web` against local Supabase, run unit + E2E tests, and the prerequisite that **real Google/Discord OAuth credentials are needed only for manual login** (per spec §5).
 
-- [ ] **Step 2: Full DoD sweep**
+- [x] **Step 2: Full DoD sweep** _(GREEN: format, lint, typecheck ×4 workspaces, 30 unit tests, `next build`, 4 E2E)_
       Run, from repo root, and fix anything red:
 
 ```bash

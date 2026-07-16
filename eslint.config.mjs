@@ -592,7 +592,7 @@ const eslintConfig = defineConfig([
         { type: "app", pattern: "apps/*/src/app/**" },
         { type: "test", pattern: "apps/*/src/test/**" },
         { type: "mocks", pattern: "apps/*/src/mocks/**" },
-        { type: "root", pattern: "apps/*/src/proxy.ts" },
+        { type: "root", pattern: "apps/*/src/proxy.ts", mode: "file" },
       ],
     },
   },

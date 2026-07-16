@@ -1,6 +1,6 @@
+import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
-import { createServerClient } from "@supabase/ssr";
 
 import { routing } from "@/shared/infrastructure/i18n";
 import {
@@ -12,7 +12,25 @@ import { needsAuthRedirect } from "@/shared/infrastructure/supabase/middleware-s
 
 const intl = createIntlMiddleware(routing);
 
-export async function middleware(request: NextRequest) {
+// Skip Next internals, the API, the OAuth callback, and any file with an
+// extension — including locale-prefixed asset paths (e.g. /en/_next/*). If
+// next-intl runs on these it locale-prefixes them and breaks asset loading.
+function isExcluded(pathname: string): boolean {
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/auth/callback")
+  ) {
+    return true;
+  }
+  const segments = pathname.split("/"); // ["", "en", "_next", …]
+  if (segments[2] === "_next" || segments[2] === "api") return true;
+  return (segments.at(-1) ?? "").includes("."); // any file with an extension
+}
+
+export async function proxy(request: NextRequest) {
+  if (isExcluded(request.nextUrl.pathname)) return NextResponse.next();
+
   const res = intl(request);
 
   // Refresh the Supabase session, mirroring any updated cookies onto the intl response.
@@ -20,10 +38,10 @@ export async function middleware(request: NextRequest) {
     auth: { storageKey: SUPABASE_COOKIE_KEY },
     cookies: {
       getAll: () => request.cookies.getAll(),
-      setAll: (toSet) =>
-        toSet.forEach(({ name, value, options }) =>
-          res.cookies.set(name, value, options),
-        ),
+      setAll: (toSet) => {
+        for (const { name, value, options } of toSet)
+          res.cookies.set(name, value, options);
+      },
     },
   });
   const { data } = await supabase.auth.getUser();
@@ -38,7 +56,3 @@ export async function middleware(request: NextRequest) {
 
   return res;
 }
-
-export const config = {
-  matcher: ["/((?!_next|api|auth/callback|.*\\..*).*)"],
-};

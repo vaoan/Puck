@@ -19,5 +19,9 @@
     "avatarUrl": "Avatar URL",
     "email": "Email"
   },
-  "nav": { "brand": "Puck", "account": "Account" }
+  "nav": { "brand": "Puck", "account": "Account" },
+  "meta": {
+    "title": "Puck",
+    "description": "Event scheduling and notifications for organizers."
+  }
 }
