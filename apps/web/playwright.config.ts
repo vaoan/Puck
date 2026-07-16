@@ -1,23 +1,19 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// The app runs on port 5000 (`next dev -p 5000`). Override with E2E_BASE_URL.
-const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:5000";
+// The app is served by scripts/e2e.mjs — either the puck-ci container
+// (APPS_MODE=docker, http://localhost:5050) or `pnpm dev` (http://localhost:5000).
+const BASE_URL =
+  process.env.NEXT_PUBLIC_WEB_URL ??
+  process.env.E2E_BASE_URL ??
+  "http://localhost:5000";
 
-/**
- * Slice-1 E2E config.
- *
- * External stack, like CandyStore: a **local Supabase** must be running
- * (`pnpm db:start` + `pnpm db:reset`) with `NEXT_PUBLIC_SUPABASE_URL`,
- * `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` in the
- * environment. Playwright manages the Next app itself via `webServer`.
- */
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
-  reporter: [["list"]],
+  reporter: [["list"], ["html", { open: "never" }]],
   timeout: 60_000,
   use: {
     baseURL: BASE_URL,
@@ -25,12 +21,5 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
-    command: "pnpm dev",
-    // Health check on a deterministic 200 page — the bare root redirects and
-    // the middleware's session lookup shouldn't gate readiness.
-    url: `${BASE_URL}/en/login`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  // No webServer — the app lifecycle is owned by scripts/e2e.mjs.
 });

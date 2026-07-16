@@ -16,7 +16,10 @@ function requireEnv(name: string): string {
 
 const SUPABASE_URL = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
 const SERVICE_ROLE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:5000";
+const BASE_URL =
+  process.env.E2E_BASE_URL ??
+  process.env.NEXT_PUBLIC_WEB_URL ??
+  "http://localhost:5000";
 
 /** Session lifetime (seconds) for the injected cookie payload. */
 const SESSION_EXPIRY_SECONDS = 3600;
