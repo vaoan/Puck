@@ -121,6 +121,30 @@ workspaces.
 > ⚠️ **Puck uses its own Supabase project.** Never point `SUPABASE_URL` /
 > `SUPABASE_SERVICE_ROLE_KEY` at CandyStore or any shared / production database.
 
+### Running the web app (`apps/web`)
+
+The web app talks directly to Supabase, so start the local stack first, then the
+dev server on port 5000:
+
+```bash
+pnpm db:start                     # local Supabase (Docker) — prints URL + keys
+pnpm db:reset                     # apply migrations
+pnpm --filter @puck/web dev       # http://localhost:5000
+```
+
+Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (from
+`supabase start`) in your `.env` — see `.env.example`. **Manual browser login
+needs real Google/Discord OAuth credentials** configured in Supabase Auth; the
+automated tests do not.
+
+```bash
+pnpm --filter @puck/web test      # unit tests (Vitest + RTL)
+
+# E2E (Playwright) — needs local Supabase up + SUPABASE_SERVICE_ROLE_KEY set
+# (the auth fixture seeds a real session via the admin API):
+pnpm --filter @puck/web test:e2e
+```
+
 ## Repo boilerplate
 
 The dev-backbone rails are already in place:

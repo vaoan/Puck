@@ -592,7 +592,7 @@ const eslintConfig = defineConfig([
         { type: "app", pattern: "apps/*/src/app/**" },
         { type: "test", pattern: "apps/*/src/test/**" },
         { type: "mocks", pattern: "apps/*/src/mocks/**" },
-        { type: "root", pattern: "apps/*/src/proxy.ts" },
+        { type: "root", pattern: "apps/*/src/proxy.ts", mode: "file" },
       ],
     },
   },
@@ -991,7 +991,6 @@ const eslintConfig = defineConfig([
       `${APP_SRC}/**/*.spec.{ts,tsx}`,
       "packages/*/src/**/*.test.{ts,tsx}",
       "packages/*/src/**/*.spec.{ts,tsx}",
-      "packages/shared/src/utils/tid.ts",
       `${APP_SRC}/**/infrastructure/config/**`,
     ],
     rules: {
@@ -1000,7 +999,7 @@ const eslintConfig = defineConfig([
         {
           selector: "JSXAttribute[name.name='data-testid']",
           message:
-            "Use the tid() utility from '@puck/shared' instead of data-testid literals so test IDs are stripped in production.",
+            "Use the tid() utility from '@/shared/infrastructure/config/tid' instead of data-testid literals so test IDs are stripped in production.",
         },
         {
           selector:

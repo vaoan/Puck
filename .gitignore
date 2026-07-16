@@ -17,6 +17,7 @@ out/
 # test output
 coverage/
 playwright-report/
+test-results/
 .playwright-mcp/
 
 # env & secrets

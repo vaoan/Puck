@@ -1,13 +1,15 @@
-import { screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+const redirect = vi.fn();
+vi.mock("@/shared/infrastructure/i18n", () => ({
+  redirect: (...args: unknown[]) => redirect(...args),
+}));
 
 import HomePage from "./page";
 
-import { renderWithProviders } from "@/test/render";
-
 describe("HomePage", () => {
-  it("renders the home test-id", () => {
-    renderWithProviders(<HomePage />);
-    expect(screen.getByTestId("home")).toBeInTheDocument();
+  it("redirects to the account page (interim landing until the events dashboard exists)", async () => {
+    await HomePage({ params: Promise.resolve({ locale: "en" }) });
+    expect(redirect).toHaveBeenCalledWith({ href: "/account", locale: "en" });
   });
 });
