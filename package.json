@@ -31,6 +31,10 @@
     "db:types": "supabase gen types typescript --local > packages/db/src/database.types.ts",
     "sync-secrets": "node scripts/sync-secrets.mjs",
     "test:db": "supabase db reset && vitest run -c vitest.config.integration.ts",
+    "supabase:docker": "node scripts/supabase-docker.mjs",
+    "docker:build": "node scripts/docker-build.mjs",
+    "e2e:ci": "node scripts/e2e.mjs --env ci --app web",
+    "e2e:dev": "node scripts/e2e.mjs --env dev --app web",
     "prepare": "husky"
   },
   "devDependencies": {
