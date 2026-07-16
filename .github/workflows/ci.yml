@@ -413,7 +413,7 @@ jobs:
 
       - name: Get Playwright version
         id: pw
-        run: echo "version=$(pnpm --filter web list @playwright/test --json | jq -r '.[0].devDependencies[\"@playwright/test\"].version')" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(pnpm --filter web list @playwright/test --json | jq -r '.[0].devDependencies["@playwright/test"].version')" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         id: pw-cache
