@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { ProfileFormValues } from "../domain/schema";
-import type { Profile } from "../domain/types";
+import type { ProfileFormValues } from "@/features/account/domain/schema";
+import type { Profile } from "@/features/account/domain/types";
 
 import type { Database } from "@puck/db";
 

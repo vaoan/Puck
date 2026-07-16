@@ -17,9 +17,16 @@
     "title": "Account",
     "displayName": "Display name",
     "avatarUrl": "Avatar URL",
-    "email": "Email"
+    "email": "Email",
+    "errors": {
+      "displayNameTooLong": "Display name must be 100 characters or fewer",
+      "avatarUrlInvalid": "Avatar URL must be a valid https:// link"
+    }
   },
-  "nav": { "brand": "Puck", "account": "Account" },
+  "nav": {
+    "brand": "Puck",
+    "account": "Account"
+  },
   "meta": {
     "title": "Puck",
     "description": "Event scheduling and notifications for organizers."

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { NextIntlClientProvider } from "next-intl";
+import { hasLocale, NextIntlClientProvider } from "next-intl";
 import {
   getMessages,
   getTranslations,
@@ -32,7 +32,9 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  if (!routing.locales.includes(locale as "en" | "es")) {
+  // hasLocale narrows against routing.locales itself — a hardcoded union would
+  // silently go stale the moment a locale is added.
+  if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
   setRequestLocale(locale);

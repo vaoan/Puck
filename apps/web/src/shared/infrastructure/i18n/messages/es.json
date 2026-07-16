@@ -17,9 +17,16 @@
     "title": "Cuenta",
     "displayName": "Nombre visible",
     "avatarUrl": "URL del avatar",
-    "email": "Correo electrónico"
+    "email": "Correo electrónico",
+    "errors": {
+      "displayNameTooLong": "El nombre debe tener 100 caracteres o menos",
+      "avatarUrlInvalid": "La URL del avatar debe ser un enlace https:// válido"
+    }
   },
-  "nav": { "brand": "Puck", "account": "Cuenta" },
+  "nav": {
+    "brand": "Puck",
+    "account": "Cuenta"
+  },
   "meta": {
     "title": "Puck",
     "description": "Programación de eventos y notificaciones para organizadores."

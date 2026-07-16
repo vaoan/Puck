@@ -18,11 +18,15 @@ interface AuthFixtures {
 export const test = base.extend<AuthFixtures>({
   authenticatedPage: async ({ context }, use) => {
     const user = await createTestUser();
-    await injectSession(context, user);
-
-    await use({ userId: user.userId, email: user.email });
-
-    await deleteTestUser(user.userId);
+    // Once the user exists, cleanup must be unconditional: a throw from
+    // injectSession would otherwise strand the user (and its trigger-created
+    // user_profiles row) in the database on every run.
+    try {
+      await injectSession(context, user);
+      await use({ userId: user.userId, email: user.email });
+    } finally {
+      await deleteTestUser(user.userId);
+    }
   },
 });
 

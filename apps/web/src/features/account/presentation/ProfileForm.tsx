@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import { profileFormSchema } from "@/features/account/domain/schema";
@@ -32,10 +33,14 @@ export function ProfileForm({
   const t = useTranslations("account");
   const tc = useTranslations("common");
 
+  // Schema messages are i18n key suffixes (see domain/schema.ts).
+  const errorText = (code?: string) => (code ? t(`errors.${code}`) : null);
+
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    reset,
+    formState: { errors, isDirty },
   } = useForm<ProfileFormInput, unknown, ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -44,9 +49,15 @@ export function ProfileForm({
     },
   });
 
+  // A successful save makes the current values the new baseline, so the form
+  // reads as clean until the user edits again.
+  useEffect(() => {
+    if (isSuccess) reset(undefined, { keepValues: true });
+  }, [isSuccess, reset]);
+
   let saveLabel = tc("save");
   if (isPending) saveLabel = tc("loading");
-  else if (isSuccess) saveLabel = tc("saved");
+  else if (isSuccess && !isDirty) saveLabel = tc("saved");
 
   return (
     <form
@@ -61,6 +72,14 @@ export function ProfileForm({
           {...register("display_name")}
           {...tid("profile-display-name")}
         />
+        {errors.display_name ? (
+          <p
+            className="text-destructive text-sm"
+            {...tid("profile-display-name-error")}
+          >
+            {errorText(errors.display_name.message)}
+          </p>
+        ) : null}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -75,7 +94,7 @@ export function ProfileForm({
             className="text-destructive text-sm"
             {...tid("profile-avatar-url-error")}
           >
-            {errors.avatar_url.message}
+            {errorText(errors.avatar_url.message)}
           </p>
         ) : null}
       </div>

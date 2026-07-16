@@ -4,6 +4,10 @@ import createIntlMiddleware from "next-intl/middleware";
 
 import { routing } from "@/shared/infrastructure/i18n";
 import {
+  isExcluded,
+  resolveLocale,
+} from "@/shared/infrastructure/routing/proxy-routing";
+import {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   SUPABASE_COOKIE_KEY,
@@ -12,24 +16,12 @@ import { needsAuthRedirect } from "@/shared/infrastructure/supabase/middleware-s
 
 const intl = createIntlMiddleware(routing);
 
-// Skip Next internals, the API, the OAuth callback, and any file with an
-// extension — including locale-prefixed asset paths (e.g. /en/_next/*). If
-// next-intl runs on these it locale-prefixes them and breaks asset loading.
-function isExcluded(pathname: string): boolean {
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.startsWith("/auth/callback")
-  ) {
-    return true;
-  }
-  const segments = pathname.split("/"); // ["", "en", "_next", …]
-  if (segments[2] === "_next" || segments[2] === "api") return true;
-  return (segments.at(-1) ?? "").includes("."); // any file with an extension
-}
+/** Supabase returns 401 for "no/expired session" — an expected, non-loggable state. */
+const HTTP_UNAUTHORIZED = 401;
 
 export async function proxy(request: NextRequest) {
-  if (isExcluded(request.nextUrl.pathname)) return NextResponse.next();
+  const { pathname } = request.nextUrl;
+  if (isExcluded(pathname)) return NextResponse.next();
 
   const res = intl(request);
 
@@ -44,14 +36,23 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  const { data } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (needsAuthRedirect(request.nextUrl.pathname, !!data.user)) {
-    const locale =
-      request.nextUrl.pathname.split("/")[1] || routing.defaultLocale;
-    const url = new URL(`/${locale}/login`, request.url);
-    url.searchParams.set("returnTo", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
+  // Fail closed, but keep the cause visible: a transient Supabase outage is
+  // indistinguishable from "signed out" without this.
+  if (error && error.status !== HTTP_UNAUTHORIZED) {
+    console.error("[proxy] Supabase getUser failed:", error.message);
+  }
+
+  if (needsAuthRedirect(pathname, !!data.user)) {
+    const url = new URL(`/${resolveLocale(pathname)}/login`, request.url);
+    url.searchParams.set("returnTo", pathname);
+    const redirectRes = NextResponse.redirect(url);
+    // Carry over cookies written during getUser() — notably the sign-out
+    // cookie removals when a refresh token has expired. A bare
+    // NextResponse.redirect() would drop them and strand a dead session cookie.
+    for (const cookie of res.cookies.getAll()) redirectRes.cookies.set(cookie);
+    return redirectRes;
   }
 
   return res;

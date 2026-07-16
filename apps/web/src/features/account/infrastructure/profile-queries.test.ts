@@ -11,11 +11,12 @@ function fakeSupabase(row: unknown) {
   // fetch chain: from().select().eq().single()
   const select = vi.fn(() => ({ eq: vi.fn(() => ({ single })) }));
   // update chain: from().update().eq().select().single()
+  const updateSelect = vi.fn(() => ({ single }));
   const update = vi.fn(() => ({
-    eq: vi.fn(() => ({ select: vi.fn(() => ({ single })) })),
+    eq: vi.fn(() => ({ select: updateSelect })),
   }));
   const from = vi.fn(() => ({ select, update }));
-  return { client: { from } as never, from, select, update };
+  return { client: { from } as never, from, select, update, updateSelect };
 }
 
 describe("PROFILE_COLUMNS", () => {
@@ -53,7 +54,7 @@ describe("fetchProfile", () => {
 
 describe("updateProfile", () => {
   it("updates and returns the column-scoped row", async () => {
-    const { client, from, update } = fakeSupabase({
+    const { client, from, update, updateSelect } = fakeSupabase({
       id: "u1",
       display_name: "New",
     });
@@ -68,6 +69,23 @@ describe("updateProfile", () => {
       display_name: "New",
       avatar_url: null,
     });
+    // The returned row must be column-scoped too, or an update response
+    // would leak the PII columns that fetchProfile carefully excludes.
+    expect(updateSelect).toHaveBeenCalledWith(PROFILE_COLUMNS);
     expect(out.display_name).toBe("New");
+  });
+
+  it("throws when supabase returns an error", async () => {
+    const single = vi
+      .fn()
+      .mockResolvedValue({ data: null, error: new Error("boom") });
+    const update = vi.fn(() => ({
+      eq: vi.fn(() => ({ select: vi.fn(() => ({ single })) })),
+    }));
+    const client = { from: vi.fn(() => ({ update })) } as never;
+
+    await expect(
+      updateProfile(client, "u1", { display_name: "New", avatar_url: null }),
+    ).rejects.toThrow("boom");
   });
 });

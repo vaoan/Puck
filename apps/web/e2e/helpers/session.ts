@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import type { BrowserContext } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
@@ -56,8 +58,11 @@ export interface TestUser {
  * consumer permissions — no manual profile seeding needed.
  */
 export async function createTestUser(): Promise<TestUser> {
-  const email = `e2e-${Date.now()}@test.invalid`;
-  const password = `test-${Date.now()}`;
+  // Not Date.now(): two users created in the same millisecond would collide on
+  // the unique email constraint, coupling correctness to `workers: 1`.
+  const id = randomUUID();
+  const email = `e2e-${id}@test.invalid`;
+  const password = `test-${randomUUID()}`;
 
   const { data: created, error: createError } =
     await supabaseAdmin.auth.admin.createUser({
@@ -119,5 +124,10 @@ export async function injectSession(
 
 /** Delete a test user (fixture teardown). */
 export async function deleteTestUser(userId: string): Promise<void> {
-  await supabaseAdmin.auth.admin.deleteUser(userId);
+  // supabase-js resolves with { error } rather than throwing — without this
+  // check a failed cleanup leaks the user silently, run after run.
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+  if (error) {
+    throw new Error(`Failed to delete test user ${userId}: ${error.message}`);
+  }
 }
