@@ -153,6 +153,13 @@ if (appsMode === "docker") {
       env: process.env,
       shell: isWindows,
     });
+    process.on("exit", () => {
+      try {
+        devProc?.kill("SIGTERM");
+      } catch {
+        /* already gone */
+      }
+    });
     await waitForHttp(`http://127.0.0.1:${DEV_PORT}/en/login`, 120_000);
   }
 }
