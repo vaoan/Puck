@@ -8,7 +8,7 @@ import {
   resolveLocale,
 } from "@/shared/infrastructure/routing/proxy-routing";
 import {
-  SUPABASE_URL,
+  SUPABASE_SERVER_URL,
   SUPABASE_ANON_KEY,
   SUPABASE_COOKIE_KEY,
 } from "@/shared/infrastructure/supabase/config";
@@ -26,7 +26,7 @@ export async function proxy(request: NextRequest) {
   const res = intl(request);
 
   // Refresh the Supabase session, mirroring any updated cookies onto the intl response.
-  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createServerClient(SUPABASE_SERVER_URL, SUPABASE_ANON_KEY, {
     auth: { storageKey: SUPABASE_COOKIE_KEY },
     cookies: {
       getAll: () => request.cookies.getAll(),
