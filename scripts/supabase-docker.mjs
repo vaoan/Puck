@@ -32,7 +32,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, unlinkSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveEnv } from "./load-env.mjs";
+import { loadEnvFile } from "./load-env.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..");
@@ -83,24 +83,8 @@ if (!command || !VALID_COMMANDS.includes(command)) {
 
 // ── Load env file ─────────────────────────────────────────────────────────────
 
-function loadEnv(env) {
-  const envPath = resolve(rootDir, `.env.${env}`);
-  if (!existsSync(envPath)) {
-    throw new Error(`Env file not found: .env.${env}`);
-  }
-  const envText = readFileSync(envPath, "utf-8");
-  const secretsPath = resolve(rootDir, ".secrets");
-  const secrets = existsSync(secretsPath)
-    ? resolveEnv(readFileSync(secretsPath, "utf-8"), {})
-    : {};
-  const resolved = resolveEnv(envText, secrets);
-  for (const [k, v] of Object.entries(resolved)) {
-    if (!(k in process.env)) process.env[k] = v;
-  }
-}
-
 try {
-  loadEnv(targetEnv);
+  loadEnvFile(targetEnv, rootDir);
 } catch (err) {
   console.error(`ERROR: Failed to load .env.${targetEnv}: ${err.message}`);
   process.exit(1);
@@ -114,6 +98,14 @@ console.log(`   command: ${command}\n`);
 
 const templatePath = resolve(rootDir, "supabase/config.toml.template");
 const configPath = resolve(rootDir, "supabase/config.toml");
+
+// A tracked supabase/config.toml exists for direct `supabase` CLI use
+// (`pnpm db:start`). We overwrite it with a per-env render below, so remember
+// the original and restore it on cleanup rather than deleting a tracked file.
+let originalConfig = null;
+// cleanupConfig runs from several paths (explicit calls + exit/signal handlers);
+// guard so it acts exactly once and a later call can't delete a restored file.
+let configCleaned = false;
 
 /**
  * Derive all Supabase service ports from a single base port.
@@ -188,6 +180,9 @@ function generateConfig() {
     edgeRuntimeEnabled,
   );
 
+  if (originalConfig === null && existsSync(configPath)) {
+    originalConfig = readFileSync(configPath, "utf-8");
+  }
   writeFileSync(configPath, template, "utf-8");
   console.log(
     `Generated config.toml (Project: ${projectId}, API: ${ports.SUPABASE_API_PORT}, Studio: ${ports.SUPABASE_STUDIO_PORT})`,
@@ -195,7 +190,13 @@ function generateConfig() {
 }
 
 function cleanupConfig() {
-  if (existsSync(configPath)) {
+  if (configCleaned) return;
+  configCleaned = true;
+  if (originalConfig !== null) {
+    // Restore the tracked config.toml we overwrote — never delete it.
+    writeFileSync(configPath, originalConfig, "utf-8");
+    console.log(`Restored original config.toml`);
+  } else if (existsSync(configPath)) {
     unlinkSync(configPath);
     console.log(`Cleaned up temporary config.toml`);
   }

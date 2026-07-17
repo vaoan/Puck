@@ -17,10 +17,9 @@
  */
 
 import { execSync, spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveEnv } from "./load-env.mjs";
+import { loadEnvFile } from "./load-env.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..");
@@ -52,24 +51,8 @@ const up = args.includes("--up");
 
 // ── Load env file ─────────────────────────────────────────────────────────────
 
-function loadEnv(env) {
-  const envPath = resolve(rootDir, `.env.${env}`);
-  if (!existsSync(envPath)) {
-    throw new Error(`Env file not found: .env.${env}`);
-  }
-  const envText = readFileSync(envPath, "utf-8");
-  const secretsPath = resolve(rootDir, ".secrets");
-  const secrets = existsSync(secretsPath)
-    ? resolveEnv(readFileSync(secretsPath, "utf-8"), {})
-    : {};
-  const resolved = resolveEnv(envText, secrets);
-  for (const [k, v] of Object.entries(resolved)) {
-    if (!(k in process.env)) process.env[k] = v;
-  }
-}
-
 try {
-  loadEnv(targetEnv);
+  loadEnvFile(targetEnv, rootDir);
 } catch (err) {
   console.error(`ERROR: Failed to load .env.${targetEnv}: ${err.message}`);
   process.exit(1);

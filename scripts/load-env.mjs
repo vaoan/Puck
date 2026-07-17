@@ -64,6 +64,52 @@ export function resolveEnv(envText, secrets) {
   return vars;
 }
 
+/**
+ * Build the secret map for resolving an env file's `$secret:` references.
+ * In CI (`CI=true`), secrets already live in `process.env`, so referenced
+ * names are collected from there (absent ones resolve to `""`). Locally, they
+ * come from the flat `.secrets` file, or `{}` if it is absent.
+ *
+ * @param {string} envText   Raw env-file text (used to discover referenced names in CI).
+ * @param {string} rootDir   Repo root, where `.secrets` is looked up.
+ * @returns {Record<string, string>} Secret name → value map for `resolveEnv`.
+ */
+export function collectSecrets(envText, rootDir) {
+  if (process.env.CI === "true") {
+    /** @type {Record<string, string>} */
+    const secrets = {};
+    for (const [, name] of envText.matchAll(SECRET_RE)) {
+      secrets[name] = process.env[name] ?? "";
+    }
+    return secrets;
+  }
+  const secretsPath = resolve(rootDir, ".secrets");
+  return existsSync(secretsPath)
+    ? parseEnvText(readFileSync(secretsPath, "utf-8"))
+    : {};
+}
+
+/**
+ * Load `.env.<env>` into `process.env`, resolving `$secret:` references
+ * CI-awarely (see {@link collectSecrets}). Existing `process.env` values win.
+ *
+ * @param {string} env      Env name (e.g. "dev", "ci") → `.env.<env>`.
+ * @param {string} rootDir  Repo root.
+ * @returns {Record<string, string>} The resolved vars.
+ */
+export function loadEnvFile(env, rootDir) {
+  const envPath = resolve(rootDir, `.env.${env}`);
+  if (!existsSync(envPath)) {
+    throw new Error(`Env file not found: .env.${env}`);
+  }
+  const envText = readFileSync(envPath, "utf-8");
+  const resolved = resolveEnv(envText, collectSecrets(envText, rootDir));
+  for (const [key, val] of Object.entries(resolved)) {
+    if (!(key in process.env)) process.env[key] = val;
+  }
+  return resolved;
+}
+
 // ---------------------------------------------------------------------------
 // CLI entry point — guarded so importing this module for tests is side-effect-free
 // ---------------------------------------------------------------------------
@@ -127,25 +173,7 @@ if (isMain) {
 
   const envText = readFileSync(envPath, "utf-8");
 
-  /** @type {Record<string, string>} */
-  let secrets = {};
-  const secretsPath = resolve(rootDir, ".secrets");
-
-  if (process.env.CI === "true") {
-    // CI: real secrets already in process.env — collect them from there
-    const needed = [...envText.matchAll(SECRET_RE)].map((m) => m[1]);
-    for (const name of needed) {
-      secrets[name] = process.env[name] ?? "";
-    }
-  } else if (existsSync(secretsPath)) {
-    secrets = parseEnvText(readFileSync(secretsPath, "utf-8"));
-  } else {
-    process.stderr.write(
-      "[load-env] Warning: .secrets file not found. Secret references may fail.\n",
-    );
-  }
-
-  const resolved = resolveEnv(envText, secrets);
+  const resolved = resolveEnv(envText, collectSecrets(envText, rootDir));
 
   for (const [key, val] of Object.entries(resolved)) {
     if (!(key in process.env)) {
