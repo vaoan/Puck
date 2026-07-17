@@ -324,6 +324,13 @@ jobs:
   # ============================================
   # Docker Build (CI image for E2E)
   # ============================================
+  # NOTE: this job pushes the image to ghcr with GITHUB_TOKEN, which is
+  # read-only for packages on PRs from forks — a fork PR would fail here and,
+  # because e2e-tests then can't run, the CI Gate would block it. Puck's
+  # workflow uses same-repo branches (feat/*, chore/* off develop), never
+  # forks, so this doesn't arise. If forks ever matter, build with
+  # push:false + load:true and hand the image to e2e-tests via an artifact,
+  # or gate the push on github.event.pull_request.head.repo.fork == false.
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
