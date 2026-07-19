@@ -4,19 +4,17 @@
 # are ready), then every 12 minutes.
 #
 # Runtime shape: Puck runs Node long-running services (Fastify API + worker +
-# Telegram bot) PLUS a Next.js web app. Only HTTP-serving apps need warming.
-# fill per app when it lands — update APPS below.
+# Telegram bot) PLUS a Next.js web app. Only HTTP-serving apps need warming
+# (currently apps/web); add more services to APPS below as they land.
 
 set -eu
 
 INTERVAL=720  # 12 minutes
 
-# port:path pairs — one representative route per HTTP app
-# fill per app when it lands:
-#   5000:/       → apps/web (Next.js)
-#   5001:/health → apps/api (Fastify — health endpoint)
+# port:path pairs — one representative route per HTTP app.
+# Add more as apps land, e.g. `5001:/health` → apps/api (Fastify).
 APPS="
-# 5000:/   fill per app when it lands
+5000:/
 "
 
 log() { printf '[WARMER] %s %s\n' "$(date -u '+%H:%M:%S')" "$*"; }
