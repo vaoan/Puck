@@ -33,6 +33,7 @@ jobs:
       worker: ${{ steps.filter.outputs.worker }}
       bot: ${{ steps.filter.outputs.bot }}
       packages: ${{ steps.filter.outputs.packages }}
+      scripts: ${{ steps.filter.outputs.scripts }}
       tooling: ${{ steps.filter.outputs.tooling }}
       docs-only: ${{ steps.check.outputs.docs-only }}
     steps:
@@ -54,20 +55,31 @@ jobs:
               - 'apps/bot/**'
             packages:
               - 'packages/**'
+            scripts:
+              - 'scripts/**'
             tooling:
               - 'package.json'
               - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
               - 'tsconfig*.json'
               - 'eslint.config.*'
               - 'prettier.config.*'
+              - 'turbo.json'
             code:
               - 'apps/**'
               - 'packages/**'
+              - 'scripts/**'
+              - 'docker/**'
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'supabase/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
               - 'tsconfig*.json'
               - 'eslint.config.*'
               - 'prettier.config.*'
+              - 'turbo.json'
 
       - name: Check if docs-only
         id: check
@@ -131,8 +143,13 @@ jobs:
             exit 0
           fi
 
-          if [ -z "$LINT_TARGETS" ]; then
-            echo "No lintable workspace changes detected. Skipping lint."
+          # scripts/ is not a workspace, so add it to the lint set directly.
+          if [ "${{ needs.changes.outputs.scripts }}" = "true" ]; then
+            LINT_TARGETS="$LINT_TARGETS scripts"
+          fi
+
+          if [ -z "$(echo "$LINT_TARGETS" | tr -d '[:space:]')" ]; then
+            echo "No lintable changes detected. Skipping lint."
             exit 0
           fi
 
@@ -232,6 +249,10 @@ jobs:
           for APP in $APPS; do
             pnpm --filter "$APP" test
           done
+
+      - name: Run script tests
+        if: needs.changes.outputs.scripts == 'true'
+        run: pnpm test:scripts
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0

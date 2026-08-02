@@ -145,8 +145,15 @@ jobs:
             code:
               - 'apps/**'
               - 'packages/**'
+              - 'scripts/**'
+              - 'docker/**'
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'supabase/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
 
       - name: Check if docs-only
         id: check
@@ -428,7 +435,15 @@ jobs:
     name: PR Gate
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [branch-target, pr-title, changes, security, accessibility, visual-regression]
+    needs:
+      [
+        branch-target,
+        pr-title,
+        changes,
+        security,
+        accessibility,
+        visual-regression,
+      ]
     if: always()
     steps:
       - name: Verify no required job failed
