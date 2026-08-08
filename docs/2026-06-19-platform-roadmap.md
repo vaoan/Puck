@@ -10,7 +10,7 @@ spec → plan → build cycle._
 Puck is an **event scheduler**. Organizers create umbrella **events** (multi-day
 festivals/conferences) containing a flat schedule of **sessions** (happenings,
 each with a start time; sessions may **recur**). Authoring is governed by a
-**CandyStore-style permission system** — not a single admin. End users discover
+**Libra-style permission system** — not a single admin. End users discover
 events, **subscribe to a whole event** (→ a **daily digest** of that day's
 schedule while the event runs) and/or **subscribe to individual sessions**,
 choosing reminder lead times (**30 / 15 / 10 / 5 min before, and at start** —
@@ -28,25 +28,25 @@ to **Telegram and email**.
 
 ## Sub-projects (dependency order)
 
-| #     | Sub-project                                       | Scope                                                                                                                                                                                       | Depends on |
-| ----- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **1** | **Foundation: identity + RBAC + core domain**     | Supabase Auth (social login, like CandyStore), users, event/session schema (with recurrence-ready occurrences), and the owner/delegate permission model + override rules (enforced via RLS) | —          |
-| **2** | **Authoring web app**                             | Next.js admin mirroring the sisters: create/edit events & sessions, per-day view, recurrence, document uploads (Supabase Storage), delegate management, moderation                          | 1          |
-| **3** | **Notification engine** _(scaffolded 2026-06-19)_ | two-level subscriptions (event daily-digest + per-session reminders at 30/15/10/5/start), pgmq + pg_cron scheduling, fan-out, dedupe, Telegram/email delivery                               | 1, 2       |
-| **4** | **Telegram consumer bot**                         | discovery (deep-link codes / QR / search), browse schedule, subscribe, set reminder offsets, link Telegram ↔ user                                                                           | 1, 2, 3    |
+| #     | Sub-project                                       | Scope                                                                                                                                                                                  | Depends on |
+| ----- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **1** | **Foundation: identity + RBAC + core domain**     | Supabase Auth (social login, like Libra), users, event/session schema (with recurrence-ready occurrences), and the owner/delegate permission model + override rules (enforced via RLS) | —          |
+| **2** | **Authoring web app**                             | Next.js admin mirroring the sisters: create/edit events & sessions, per-day view, recurrence, document uploads (Supabase Storage), delegate management, moderation                     | 1          |
+| **3** | **Notification engine** _(scaffolded 2026-06-19)_ | two-level subscriptions (event daily-digest + per-session reminders at 30/15/10/5/start), pgmq + pg_cron scheduling, fan-out, dedupe, Telegram/email delivery                          | 1, 2       |
+| **4** | **Telegram consumer bot**                         | discovery (deep-link codes / QR / search), browse schedule, subscribe, set reminder offsets, link Telegram ↔ user                                                                      | 1, 2, 3    |
 
 ## Notes & open tensions
 
-- **Scope vs. cost:** this is CandyStore-sized. The "cheap/unfunded" constraint
+- **Scope vs. cost:** this is Libra-sized. The "cheap/unfunded" constraint
   still holds (Supabase + pgmq/pg_cron, no Redis; self-host alongside the
-  existing CandyStore box), but sequencing for value matters.
+  existing Libra box), but sequencing for value matters.
 - **The existing scaffold (`apps/api`, `apps/worker`, `packages/*`) covers most
   of sub-project 3** but must be re-grounded on the real domain model from
   sub-project 1 (events → sessions → occurrences; two-level subscriptions with
   reminder offsets; daily digests).
 - **Stack addition:** sub-project 2 adds a Next.js `apps/web` (mirrors
-  CandyStore/Janus), so Puck is no longer strictly backend-only.
-- Puck uses its **own Supabase project** — never CandyStore's.
+  Libra/Janus), so Puck is no longer strictly backend-only.
+- Puck uses its **own Supabase project** — never Libra's.
 
 ## Current status
 

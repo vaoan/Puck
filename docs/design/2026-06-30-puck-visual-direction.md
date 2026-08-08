@@ -11,7 +11,7 @@
 ## Context
 
 Puck needs a visual identity. Two sister projects set the poles: **Eclipse Con**
-is a standard marketing landing page; **CandyStore** is neobrutalism. Puck is
+is a standard marketing landing page; **Libra** is neobrutalism. Puck is
 neither — it's a **phone-first schedule + reminder companion** whose hero is the
 schedule itself. Requirement from the product owner: **clean and very
 phone-friendly.**

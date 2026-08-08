@@ -1,14 +1,14 @@
 # Puck Repo Boilerplate — design spec
 
 _Date: 2026-06-21. Outcome of a brainstorming session. Goal: turn Puck's repo into
-a genericized boilerplate clone of CandyStore's dev-platform backbone, so that the
+a genericized boilerplate clone of Libra's dev-platform backbone, so that the
 day we start coding any sub-project, every rail is already in place._
 
 ## 1. Purpose
 
-Puck and CandyStore are sister projects that deliberately share a toolchain. This
-spec captures **porting CandyStore's entire developer platform into Puck**, made
-generic, with no business/domain code. **CandyStore (`Z:\Github\candystore`) is
+Puck and Libra are sister projects that deliberately share a toolchain. This
+spec captures **porting Libra's entire developer platform into Puck**, made
+generic, with no business/domain code. **Libra (`Z:\Github\libra`) is
 the source of truth** for AI tooling, performance tooling, general tooling,
 technology choices, and rules.
 
@@ -21,13 +21,13 @@ templates, and architecture docs already working.
 
 **Goals**
 
-- Reproduce CandyStore's root-level rails in Puck, genericized (`candyshop`/
-  `candystore` → `puck`, `@monorepo` → `@puck`, business specifics removed).
+- Reproduce Libra's root-level rails in Puck, genericized (`libra`/
+  `libra` → `puck`, `@monorepo` → `@puck`, business specifics removed).
 - Port _everything_ reusable — including frontend rails (tailwind, shadcn,
   component patterns, url-state, e2e selectors) — because sub-project #2 is a
   Next.js app and we want it ready.
 - Carry the _shape_ of every secret (names + example placeholders), so Puck can
-  provision its own credentials with the same tools CandyStore uses.
+  provision its own credentials with the same tools Libra uses.
 - Keep the repo installable and all quality gates green against an **empty
   workspace** (no `apps/*`/`packages/*` yet).
 
@@ -35,7 +35,7 @@ templates, and architecture docs already working.
 
 - No business/domain source code; no `apps/*` or `packages/*` directories yet
   (each workspace is created when its sub-project starts — "root rails only").
-- No real secret values are copied from CandyStore — ever.
+- No real secret values are copied from Libra — ever.
 - No live deploy. Docker, deploy, and codegen are ported as **templates**, not
   active pipelines.
 - This spec does not implement sub-project #1; it prepares the ground for it.
@@ -46,17 +46,17 @@ templates, and architecture docs already working.
    `docs/`, `docker/`, `scripts/`, `supabase/`, `config/`). No app/package dirs.
    Quality configs run against empty `apps/*`/`packages/*` globs today and
    self-apply when a workspace appears.
-2. **Genericize, don't prune.** Nothing CandyStore has is dropped for being
+2. **Genericize, don't prune.** Nothing Libra has is dropped for being
    "frontend"; it is made generic and kept ready.
 3. **Same tools, Puck's own keys.** `.secrets.example` lists every credential as
    an empty placeholder, including Cloudflare tunnel keys. Real values are Puck's,
-   provisioned later, never CandyStore's.
+   provisioned later, never Libra's.
 4. **Templates over dead wiring.** Anything that needs app code to function
    (Docker app stages, deploy targets, scoped CI matrices, codegen inputs) is
    ported as a parameterized template with a `# wire when first app lands`
    marker, so it is obvious and harmless.
-5. **CandyStore is source of truth.** When in doubt about a tool, version, rule,
-   or config, mirror CandyStore.
+5. **Libra is source of truth.** When in doubt about a tool, version, rule,
+   or config, mirror Libra.
 
 ## 4. The genericization transform
 
@@ -64,12 +64,12 @@ Apply to every ported file:
 
 | Transform                | From → To                                                                                                                              |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Project/package naming   | `candyshop` / `candystore` → `puck`; `@monorepo/*` → `@puck/*`                                                                         |
+| Project/package naming   | `libra` / `libra` → `puck`; `@monorepo/*` → `@puck/*`                                                                                  |
 | Business app lists       | hardcoded `store/admin/payments/landing/...` → generic patterns / parameterized lookups                                                |
 | URLs / domains / IDs     | real Supabase project-ids, domains, ports → placeholders or Puck's own                                                                 |
 | Secrets                  | real values → `KEY=` placeholders in `.secrets.example`; gitignored `.secrets` for reals                                               |
 | Workspace-coupled config | knip workspace list, eslint generated-path ignores, turbo `globalEnv`, ls-lint app rules → generic patterns valid with zero workspaces |
-| User-specific values     | CandyStore admin emails / accounts → Puck's own or placeholders                                                                        |
+| User-specific values     | Libra admin emails / accounts → Puck's own or placeholders                                                                             |
 
 ## 5. Scope by layer
 
@@ -122,7 +122,7 @@ Nothing pruned. Each item is ported and genericized.
   files change). Genericized so they no-op cleanly with no workspaces.
 - **lint-staged** — `*.{ts,tsx,js,jsx}` → prettier --check, eslint
   `--no-warn-ignored --max-warnings=0`, secretlint; `*.{json,md,css}` → prettier.
-- **ESLint** — full flat `eslint.config.mjs` with every plugin CandyStore uses
+- **ESLint** — full flat `eslint.config.mjs` with every plugin Libra uses
   (typescript-eslint, react-hooks, unused-imports, security, boundaries, sonarjs,
   testing-library, vitest, @tanstack/query, unicorn, better-tailwindcss, jsx-a11y,
   i18next). Includes enforcement that **e2e/test selectors use `data-testid`
@@ -182,21 +182,21 @@ Nothing pruned. Each item is ported and genericized.
   `orval.config.ts` (template), vitest base config/aliases, optional
   `walkthrough.md` / `PR_DESC.md` templates, `LICENSE` (already MIT).
 
-## 6. Known divergences from CandyStore
+## 6. Known divergences from Libra
 
-1. **TypeScript module resolution.** CandyStore is all-Next and uses `bundler`
+1. **TypeScript module resolution.** Libra is all-Next and uses `bundler`
    resolution. Puck has both Node services (NodeNext, ESM, `.js` import
    specifiers) and a Next app. `tsconfig.base.json` carries the shared strict
    flags only; **module/moduleResolution is set per-workspace** when each
    workspace is created. Not blocking at the boilerplate stage.
-2. **Runtime shape.** CandyStore's Docker serves Next apps via nginx. Puck adds
+2. **Runtime shape.** Libra's Docker serves Next apps via nginx. Puck adds
    long-running Node services, so Docker templates account for service processes,
    not only static/Next serving.
 
 ## 7. Deferred decisions (do not block the boilerplate)
 
-- **Deploy target** — likely self-host alongside the existing CandyStore box;
-  could be GCP like CandyStore. Confirm before wiring `deploy-*.yml`.
+- **Deploy target** — likely self-host alongside the existing Libra box;
+  could be GCP like Libra. Confirm before wiring `deploy-*.yml`.
 - **Environment count** — default `dev / ci / prod`; `staging` (with Cloudflare
   tunnel) is an easy add.
 - **Optional MCP accounts** — Linear, Slack, Vercel, LogRocket wrappers are

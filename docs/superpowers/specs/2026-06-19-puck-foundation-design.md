@@ -14,7 +14,7 @@ may recur); end users subscribe to events (daily digests) and sessions
 4 sub-projects.
 
 This sub-project builds the **foundation everything else stands on**: identity
-(auth), the **CandyStore-style RBAC permission system**, the **core domain
+(auth), the **Libra-style RBAC permission system**, the **core domain
 schema** (events → sessions → occurrences + support-content documents), the
 **delegation/ownership model** with its cascade rules, **deep auditing**, and
 **RLS enforcement**. It is backend/database + auth wiring — **no UI** (that is
@@ -22,12 +22,12 @@ sub-project #2) and **no notification logic** (sub-project #3).
 
 ### Guiding principles
 
-- **CandyStore-first:** start from how CandyStore solves it, reuse its proven
+- **Libra-first:** start from how Libra solves it, reuse its proven
   patterns, then add Puck specifics. (Permission core, `has_permission`,
   delegation-as-side-table, audit system, OAuth, signup triggers.)
 - **Fail-safe & cheap:** Supabase only (Postgres + Auth + RLS + Storage); no new
   infrastructure. Enforcement lives in Postgres (RLS), not just app code.
-- **Own project:** Puck uses its **own** Supabase project. Never CandyStore's DB.
+- **Own project:** Puck uses its **own** Supabase project. Never Libra's DB.
 
 ### Non-goals (explicitly deferred)
 
@@ -54,7 +54,7 @@ Absolute Admin (platform.admin)
 
 - Higher scope can act on everything below it (the **waterfall**).
 - Every delegate grant is **scoped to one resource** and bounded by a granular
-  `permissions[]` array (CandyStore `seller_admins` pattern).
+  `permissions[]` array (Libra `seller_admins` pattern).
 
 ### 2.2 Permission catalog (28 granular keys)
 
@@ -131,7 +131,7 @@ When an event actor (owner, or delegate with `event.moderate_sessions` /
 
 ## 3. Data model
 
-### 3.1 Copied from CandyStore (identity + permission core)
+### 3.1 Copied from Libra (identity + permission core)
 
 - **`user_profiles`** — `id` (PK = `auth.users.id`), `email`, `provider`,
   `display_name`, `avatar_url`, `first_seen_at`, `last_seen_at`, timestamps.
@@ -139,10 +139,10 @@ When an event actor (owner, or delegate with `event.moderate_sessions` /
   `scope` (`platform`|`event`|`session`|`content`).
 - **`user_permissions`** — **global** grants: `id`, `user_id`, `permission_id`,
   `mode` (`grant`|`deny`), `expires_at`, `granted_by`, `reason`, timestamps.
-- **`has_global_permission(user_id, key) → boolean`** — CandyStore's
+- **`has_global_permission(user_id, key) → boolean`** — Libra's
   `has_permission` logic: a `grant` exists, no active `deny`, not expired.
 
-> **Adaptation:** CandyStore's `resource_permissions` indirection table is
+> **Adaptation:** Libra's `resource_permissions` indirection table is
 > dropped. Global perms live in `user_permissions`; resource-scoped perms live on
 > the delegation rows (§3.3).
 
@@ -210,7 +210,7 @@ sub-row severe actions are explicit RPCs.
 - `broadcast_announcement(event_id, …)` → `event.broadcast`
   (These also become the natural hook points for #3's notifications.)
 
-## 5. Auditing (deep, immutable — mirrors CandyStore)
+## 5. Auditing (deep, immutable — mirrors Libra)
 
 - **`audit` schema** + **`audit.logged_actions`**: `id`, `table_name`,
   `record_id`, `action` (INSERT/UPDATE/DELETE), `actor_id` (`auth.uid()`),
@@ -223,10 +223,10 @@ sub-row severe actions are explicit RPCs.
 - **Immutable/append-only:** UPDATE and DELETE on audit rows blocked by trigger.
 - **Read access:** gated by `audit.read`. Platform admin sees all; **event
   owners/delegates with `audit.read` see audit for their own event's
-  resources** (scoped read — a Puck enhancement over CandyStore's global-only
+  resources** (scoped read — a Puck enhancement over Libra's global-only
   read).
 
-## 6. Authentication (copy CandyStore)
+## 6. Authentication (copy Libra)
 
 - Supabase Auth, **Google + Discord** providers (same as the sisters).
 - **Signup triggers** on `auth.users` INSERT: (a) upsert `user_profiles`;
@@ -262,7 +262,7 @@ redundancy.
 
 Migrations (new Supabase project, in order):
 
-1. `user_profiles` + `auth.users` sync trigger (copy/adapt CandyStore).
+1. `user_profiles` + `auth.users` sync trigger (copy/adapt Libra).
 2. `permissions` catalog + seed the ~29 keys; `user_permissions` +
    `has_global_permission()` (copy/adapt).
 3. Default-consumer-permissions signup trigger.

@@ -11,7 +11,7 @@ feed; organizers author their own data inside Puck.
 
 Organizers create umbrella **events** (multi-day festivals/conferences)
 containing a flat schedule of **sessions** (each with a start time; sessions may
-**recur**). Authoring is governed by a **CandyStore-style permission system**
+**recur**). Authoring is governed by a **Libra-style permission system**
 (owners + delegates, not a single admin). End users discover events and
 subscribe at two levels — to a **whole event** (a **daily digest** of that day's
 schedule) and/or to **individual sessions** (reminders at configurable lead
@@ -96,7 +96,7 @@ derive directly from the tokens in `docs/design/README.md`. Decision record + wh
 
 ## References
 
-**Sister projects: `Z:\Github\candystore` and `Z:\Github\Janus`.** Puck shares
+**Sister projects: `Z:\Github\libra` and `Z:\Github\Janus`.** Puck shares
 their _toolchain and conventions_ — pnpm + Turbo monorepo, strict TypeScript,
 ESLint (flat config) + Prettier, Vitest, Husky, secretlint/cspell, the
 `.env` + `.secrets` discipline, kebab-case filenames, Supabase (Auth + RLS +
@@ -105,11 +105,11 @@ follow the same approach unless noted below.
 
 Like the sisters, Puck **does** have a Next.js web app (sub-project #2). Unlike
 them, Puck **also** runs backend services — a Fastify API and a Node worker — for
-the notification engine. Mirror CandyStore/Janus for the web app; the backend
+the notification engine. Mirror Libra/Janus for the web app; the backend
 services are Puck's own addition.
 
-> ⚠️ **CandyStore is in production. Never run anything against its database.**
-> Puck has its own separate Supabase project. Never put CandyStore credentials
+> ⚠️ **Libra is in production. Never run anything against its database.**
+> Puck has its own separate Supabase project. Never put Libra credentials
 > in Puck's `.env`/`.secrets`, and never point `SUPABASE_URL` at it.
 
 ## Architecture rules (target design)

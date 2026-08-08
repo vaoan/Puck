@@ -2,16 +2,16 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build Puck's database + auth foundation — CandyStore-style capability RBAC, the events→sessions→occurrences domain, support-content documents, two-level scoped delegation with orphan cascade, RLS enforcement, severe-action RPCs, and deep immutable auditing — all test-driven.
+**Goal:** Build Puck's database + auth foundation — Libra-style capability RBAC, the events→sessions→occurrences domain, support-content documents, two-level scoped delegation with orphan cascade, RLS enforcement, severe-action RPCs, and deep immutable auditing — all test-driven.
 
-**Architecture:** Everything lives in a dedicated Supabase Postgres project. Authorization is enforced in the database via RLS + `SECURITY DEFINER` helper functions (the owner→delegate→event-override→admin "waterfall"), mirroring CandyStore. Severe sub-row actions (cancel, publish, broadcast) are explicit RPCs. Tests are TDD DB-integration tests (Vitest + `@supabase/supabase-js`) that act as real users so RLS actually runs; there is no UI in this sub-project, so no Playwright.
+**Architecture:** Everything lives in a dedicated Supabase Postgres project. Authorization is enforced in the database via RLS + `SECURITY DEFINER` helper functions (the owner→delegate→event-override→admin "waterfall"), mirroring Libra. Severe sub-row actions (cancel, publish, broadcast) are explicit RPCs. Tests are TDD DB-integration tests (Vitest + `@supabase/supabase-js`) that act as real users so RLS actually runs; there is no UI in this sub-project, so no Playwright.
 
 **Tech Stack:** Supabase (Postgres 17 + Auth + RLS + Storage), SQL migrations, pnpm + Turbo monorepo, TypeScript (ESM/NodeNext), Vitest, `@supabase/supabase-js`.
 
 ## Global Constraints
 
-- **Own Supabase project only.** Never set `SUPABASE_URL`/keys to CandyStore's. Migrations run against Puck's local/own DB exclusively.
-- **CandyStore-first.** Adapt patterns from `Z:\Github\candystore\supabase\migrations` (read them); do not copy store-specific keys/policies.
+- **Own Supabase project only.** Never set `SUPABASE_URL`/keys to Libra's. Migrations run against Puck's local/own DB exclusively.
+- **Libra-first.** Adapt patterns from `Z:\Github\libra\supabase\migrations` (read them); do not copy store-specific keys/policies.
 - **TDD.** Every task: write the failing test → run it red → migration/code → `pnpm db:test` green → commit. No code without a failing test first.
 - **Package manager:** pnpm 10, Node 24. Internal deps `@puck/*` use `workspace:*`.
 - **Filenames:** kebab-case. **Migrations:** `supabase/migrations/NNNN_snake_name.sql`, applied in lexical order; never edit an applied migration in a deployed env (Puck isn't deployed, so renumbering during this sub-project is allowed).
@@ -325,7 +325,7 @@ git commit -m "feat(db): extensions + set_updated_at helper"
 
 ## Task 3: `user_profiles` + auth sync trigger
 
-Adapted from `candystore/supabase/migrations/20260325600000_user_profiles.sql`.
+Adapted from `libra/supabase/migrations/20260325600000_user_profiles.sql`.
 
 **Files:**
 
@@ -450,7 +450,7 @@ git commit -m "feat(db): user_profiles synced from auth.users with RLS"
 
 ## Task 4: Permission catalog + `has_global_permission()`
 
-Adapted from `candystore/.../20260328100000_crud_permissions.sql` (drops `resource_permissions`; `user_permissions` references `permissions` directly).
+Adapted from `libra/.../20260328100000_crud_permissions.sql` (drops `resource_permissions`; `user_permissions` references `permissions` directly).
 
 **Files:**
 
@@ -615,7 +615,7 @@ git commit -m "feat(db): permission catalog (28 keys) + has_global_permission"
 
 ## Task 5: Default consumer permissions on signup
 
-Adapted from `candystore/.../20260408203000_default_buyer_permissions.sql`.
+Adapted from `libra/.../20260408203000_default_buyer_permissions.sql`.
 
 **Files:**
 
@@ -1572,7 +1572,7 @@ git commit -m "feat(db): orphan-cascade triggers for revoked session owners"
 
 ## Task 13: Deep immutable auditing
 
-Adapted from `candystore/.../20260325400000_audit_system.sql` (audit-read RLS uses `has_global_permission` + scoped event check instead of `resource_permissions`).
+Adapted from `libra/.../20260325400000_audit_system.sql` (audit-read RLS uses `has_global_permission` + scoped event check instead of `resource_permissions`).
 
 **Files:**
 
