@@ -22,7 +22,7 @@ soon). That functional-color discipline is the whole game. Puck applies it to a
 festival/conference schedule.
 
 Puck is **phone-first**. The hero is **the schedule itself** — not a marketing
-pitch (unlike Eclipse Con), not a storefront (unlike CandyStore's neobrutalism).
+pitch (unlike Eclipse Con), not a storefront (unlike Libra's neobrutalism).
 
 ### Reference: how Transit does it
 

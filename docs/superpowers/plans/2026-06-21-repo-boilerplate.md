@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Port CandyStore's developer-platform backbone into Puck as a genericized, root-only boilerplate so any sub-project can start with every rail (lint, format, CI, hooks, AI-assistant layer, secrets, env resolver, Docker templates) already working.
+**Goal:** Port Libra's developer-platform backbone into Puck as a genericized, root-only boilerplate so any sub-project can start with every rail (lint, format, CI, hooks, AI-assistant layer, secrets, env resolver, Docker templates) already working.
 
-**Architecture:** This is a **port**, not a greenfield build. For each artifact, the source of truth is the corresponding file in `Z:\Github\candystore`. The work per file is: copy it into Puck, apply the genericization transform (§ Global Constraints), then verify. Full original content is authored in this plan only where Puck deliberately diverges from CandyStore. Everything lands at the repo root — **no `apps/*` or `packages/*` directories are created**; quality configs run against empty workspace globs and self-apply when a workspace later appears.
+**Architecture:** This is a **port**, not a greenfield build. For each artifact, the source of truth is the corresponding file in `Z:\Github\libra`. The work per file is: copy it into Puck, apply the genericization transform (§ Global Constraints), then verify. Full original content is authored in this plan only where Puck deliberately diverges from Libra. Everything lands at the repo root — **no `apps/*` or `packages/*` directories are created**; quality configs run against empty workspace globs and self-apply when a workspace later appears.
 
 **Tech Stack:** pnpm 10 + Turbo monorepo, TypeScript (strict), ESLint flat config, Prettier, Vitest, Husky + lint-staged, secretlint + Semgrep, cspell/knip/jscpd/madge/sherif/syncpack, Supabase CLI, Docker, GitHub Actions, Node `.mjs` scripts.
 
@@ -13,9 +13,9 @@
 Every task implicitly includes these. Copy values verbatim.
 
 - **Package manager:** `pnpm@10.32.1`; `engines.node` `>=24`; `.nvmrc` = `24`.
-- **Source of truth:** `Z:\Github\candystore`. When unsure about a tool, version, rule, or config value, mirror CandyStore.
+- **Source of truth:** `Z:\Github\libra`. When unsure about a tool, version, rule, or config value, mirror Libra.
 - **Genericization transform (apply to every ported file):**
-  - `candyshop` → `puck`; `candystore` → `puck`; `Candystore`/`CandyStore` → `Puck` (except the one intentional reference: "CandyStore-style permission system").
+  - `libra` → `puck`; `libra` → `puck`; `Candystore`/`Libra` → `Puck` (except the one intentional reference: "Libra-style permission system").
   - `@monorepo/*` → `@puck/*`; package scope is `@puck/<name>`.
   - Hardcoded business app names (`store`, `admin`, `payments`, `landing`, `playground`, `studio`, `auth-app`) → generic patterns or parameterized lookups.
   - Real Supabase project-ids, domains, ports, admin emails, account ids → placeholders or Puck's own.
@@ -92,18 +92,18 @@ README.md / CLAUDE.md        modify  — note the boilerplate
 
 **Interfaces:**
 
-- Produces: a `package.json` whose `scripts` and `devDependencies` are the genericized superset of CandyStore's, and an installable workspace. Later tasks rely on these dev tools being present.
+- Produces: a `package.json` whose `scripts` and `devDependencies` are the genericized superset of Libra's, and an installable workspace. Later tasks rely on these dev tools being present.
 
-- [ ] **Step 1: Read the CandyStore sources**
+- [ ] **Step 1: Read the Libra sources**
 
 Read these and use them as the authoritative content (apply the transform):
-`Z:\Github\candystore\package.json`, `\.npmrc`, `\.nvmrc`, `\.editorconfig`, `\.gitattributes`, `\tsconfig.base.json`, `\.gitignore`.
+`Z:\Github\libra\package.json`, `\.npmrc`, `\.nvmrc`, `\.editorconfig`, `\.gitattributes`, `\tsconfig.base.json`, `\.gitignore`.
 
-- [ ] **Step 2: Merge CandyStore's `devDependencies` into Puck's `package.json`**
+- [ ] **Step 2: Merge Libra's `devDependencies` into Puck's `package.json`**
 
-Take the union of Puck's current devDeps and CandyStore's. Keep CandyStore's versions where they differ (source of truth). Ensure at minimum these are present (versions from CandyStore): `turbo@2.9.6`, `typescript@6.0.3`, `vitest@4.1.5`, `@vitest/coverage-v8`, `@vitest/eslint-plugin`, `eslint@9.39.4`, `@eslint/js`, `typescript-eslint@8.59.0`, `eslint-config-prettier`, `eslint-config-next`, `eslint-plugin-{import,security,sonarjs,unicorn,unused-imports,boundaries,i18next,react-hooks,jsx-a11y,better-tailwindcss}`, `@tanstack/eslint-plugin-query`, `eslint-plugin-testing-library`, `prettier@3.8.3`, `stylelint@17.9.1` + `stylelint-config-standard` + `stylelint-config-tailwindcss`, `cspell@10`, `knip@6.7.0`, `jscpd@4.0.9`, `madge@8`, `sherif@1.11.1`, `syncpack@14.3.1`, `husky@9.1.7`, `lint-staged@16.4.0`, `secretlint@12.3.1` + `@secretlint/secretlint-rule-preset-recommend`, `orval@8.9.0`, `supabase@2`, `tsx`, `@types/node@24`.
+Take the union of Puck's current devDeps and Libra's. Keep Libra's versions where they differ (source of truth). Ensure at minimum these are present (versions from Libra): `turbo@2.9.6`, `typescript@6.0.3`, `vitest@4.1.5`, `@vitest/coverage-v8`, `@vitest/eslint-plugin`, `eslint@9.39.4`, `@eslint/js`, `typescript-eslint@8.59.0`, `eslint-config-prettier`, `eslint-config-next`, `eslint-plugin-{import,security,sonarjs,unicorn,unused-imports,boundaries,i18next,react-hooks,jsx-a11y,better-tailwindcss}`, `@tanstack/eslint-plugin-query`, `eslint-plugin-testing-library`, `prettier@3.8.3`, `stylelint@17.9.1` + `stylelint-config-standard` + `stylelint-config-tailwindcss`, `cspell@10`, `knip@6.7.0`, `jscpd@4.0.9`, `madge@8`, `sherif@1.11.1`, `syncpack@14.3.1`, `husky@9.1.7`, `lint-staged@16.4.0`, `secretlint@12.3.1` + `@secretlint/secretlint-rule-preset-recommend`, `orval@8.9.0`, `supabase@2`, `tsx`, `@types/node@24`.
 
-- [ ] **Step 3: Merge CandyStore's `scripts` (genericized)**
+- [ ] **Step 3: Merge Libra's `scripts` (genericized)**
 
 Bring over the script set, dropping any that reference business-only apps. Required scripts: `dev`, `build`, `typecheck`, `test`, `test:watch`, `test:coverage`, `lint`, `lint:fix`, `format`, `format:check`, `check:tools`, `check:style`, `codegen`, `codegen:supabase`, `codegen:all`, `db:start`, `db:reset`, `db:diff`, `db:types`, `sync-secrets`, `prepare` (`husky`). Set `check:tools` to a command that is green on an empty workspace, e.g.:
 
@@ -115,7 +115,7 @@ Bring over the script set, dropping any that reference business-only apps. Requi
 
 - [ ] **Step 4: Set `.npmrc`, `tsconfig.base.json`, `.gitignore`**
 
-`.npmrc` contains `node-linker=hoisted`. For `tsconfig.base.json`, copy CandyStore's shared strict compiler flags but **omit** module/moduleResolution (those are set per-workspace later) — keep `strict: true`, `lib` including `dom`/`esnext`, `skipLibCheck`, `esModuleInterop`, `forceConsistentCasingInFileNames`, `incremental`. Append to `.gitignore` (dedupe): `.env`, `.secrets`, `*.local`, `.claude/tools/.env.local`, `.logs/`, `.turbo/`, `coverage/`, `playwright-report/`.
+`.npmrc` contains `node-linker=hoisted`. For `tsconfig.base.json`, copy Libra's shared strict compiler flags but **omit** module/moduleResolution (those are set per-workspace later) — keep `strict: true`, `lib` including `dom`/`esnext`, `skipLibCheck`, `esModuleInterop`, `forceConsistentCasingInFileNames`, `incremental`. Append to `.gitignore` (dedupe): `.env`, `.secrets`, `*.local`, `.claude/tools/.env.local`, `.logs/`, `.turbo/`, `coverage/`, `playwright-report/`.
 
 - [ ] **Step 5: Install and verify**
 
@@ -131,7 +131,7 @@ Expected: PASS (no workspaces → nothing to flag).
 
 ```bash
 git add package.json pnpm-lock.yaml .npmrc .nvmrc .editorconfig .gitattributes tsconfig.base.json .gitignore
-git commit -m "chore: port CandyStore root manifest and base configs
+git commit -m "chore: port Libra root manifest and base configs
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ```
@@ -151,13 +151,13 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 - Produces: a full lint stack that runs clean on the empty repo and is ready for both backend and frontend code.
 
-- [ ] **Step 1: Read CandyStore sources**
+- [ ] **Step 1: Read Libra sources**
 
-`Z:\Github\candystore\eslint.config.mjs`, `\.prettierrc`, `\.prettierignore`, `\cspell.json`, `\.ls-lint.yml`, `\.syncpackrc.json`, `\.secretlintrc.json`, `\.secretlintignore`, `\stylelint.config.mjs`.
+`Z:\Github\libra\eslint.config.mjs`, `\.prettierrc`, `\.prettierignore`, `\cspell.json`, `\.ls-lint.yml`, `\.syncpackrc.json`, `\.secretlintrc.json`, `\.secretlintignore`, `\stylelint.config.mjs`.
 
 - [ ] **Step 2: Port `eslint.config.mjs` with all plugins + generic ignores**
 
-Copy CandyStore's flat config (all plugins listed in Task 1 Step 2). Replace workspace-specific `ignores` with generic patterns so it is valid with zero workspaces:
+Copy Libra's flat config (all plugins listed in Task 1 Step 2). Replace workspace-specific `ignores` with generic patterns so it is valid with zero workspaces:
 
 ```js
 ignores: [
@@ -168,7 +168,7 @@ ignores: [
 ],
 ```
 
-Keep the `data-testid`-only enforcement for test files (the rule that bans selecting by text/role-string/class in `*.spec.ts`/`e2e`); if CandyStore expresses it via a custom rule or `no-restricted-syntax`, copy that block verbatim.
+Keep the `data-testid`-only enforcement for test files (the rule that bans selecting by text/role-string/class in `*.spec.ts`/`e2e`); if Libra expresses it via a custom rule or `no-restricted-syntax`, copy that block verbatim.
 
 - [ ] **Step 3: Port the remaining configs**
 
@@ -206,9 +206,9 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Consumes: the installed dev tools from Task 1.
 - Produces: a `check:tools` that includes dead-code, duplication, and circular-dep checks and still exits 0 with no workspaces.
 
-- [ ] **Step 1: Read CandyStore `knip.json` and `.jscpd.json`**
+- [ ] **Step 1: Read Libra `knip.json` and `.jscpd.json`**
 
-`Z:\Github\candystore\knip.json`, `\.jscpd.json`.
+`Z:\Github\libra\knip.json`, `\.jscpd.json`.
 
 - [ ] **Step 2: Author empty-workspace-safe `knip.json`**
 
@@ -227,7 +227,7 @@ Use a workspaces map keyed by the globs (not concrete app names):
 
 - [ ] **Step 3: Author `.jscpd.json`**
 
-Copy CandyStore's, set `"threshold"`, formats `typescript,tsx,javascript,jsx`, and `"ignore"` globs including `node_modules`, `.next`, `coverage`, `generated`, `.claude`, `docs`, `**/*.test.*`.
+Copy Libra's, set `"threshold"`, formats `typescript,tsx,javascript,jsx`, and `"ignore"` globs including `node_modules`, `.next`, `coverage`, `generated`, `.claude`, `docs`, `**/*.test.*`.
 
 - [ ] **Step 4: Extend `check:tools` to include the three tools, guarded for empty dirs**
 
@@ -267,13 +267,13 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Consumes: lint stack (Task 2), `check:tools` (Task 3).
 - Produces: hooks that run lint-staged + manifest checks on commit and scoped tests on push, no-op-safe with no workspaces.
 
-- [ ] **Step 1: Read CandyStore hooks**
+- [ ] **Step 1: Read Libra hooks**
 
-`Z:\Github\candystore\.husky\pre-commit`, `\.husky\pre-push`.
+`Z:\Github\libra\.husky\pre-commit`, `\.husky\pre-push`.
 
 - [ ] **Step 2: Port `pre-commit`**
 
-Run lint-staged; when `package.json`/`pnpm-workspace.yaml` are among staged files, also run `pnpm exec sherif` and `pnpm exec syncpack lint`. Keep CandyStore's sequential execution to avoid SIGKILL. Ensure `lint-staged` block in `package.json` matches:
+Run lint-staged; when `package.json`/`pnpm-workspace.yaml` are among staged files, also run `pnpm exec sherif` and `pnpm exec syncpack lint`. Keep Libra's sequential execution to avoid SIGKILL. Ensure `lint-staged` block in `package.json` matches:
 
 ```json
 "lint-staged": {
@@ -319,9 +319,9 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 - Produces: `resolveEnv(envFileContents: string, secrets: Record<string,string>): Record<string,string>` and a CLI entry that loads an `.env.<mode>` file resolving `$secret:KEY` against `.secrets`.
 
-- [ ] **Step 1: Read CandyStore resolver**
+- [ ] **Step 1: Read Libra resolver**
 
-`Z:\Github\candystore\scripts\load-env.mjs` (and any `scripts/load-env*.mjs`). Mirror its public behavior.
+`Z:\Github\libra\scripts\load-env.mjs` (and any `scripts/load-env*.mjs`). Mirror its public behavior.
 
 - [ ] **Step 2: Write the failing test**
 
@@ -360,7 +360,7 @@ Expected: FAIL (`resolveEnv` not found / module missing).
 
 - [ ] **Step 4: Implement `scripts/load-env.mjs`**
 
-Export a pure `resolveEnv(envText, secrets)` that parses `KEY=VALUE` lines (skipping blanks/`#`), replaces a whole-value `$secret:NAME` with `secrets[NAME]` (throwing `Error("Missing secret: NAME")` if absent), and returns the map. Add a CLI wrapper (reads `.env.<mode>` + `.secrets`, applies `resolveEnv`, writes resolved vars to `process.env` / prints export lines) mirroring CandyStore's interface. Keep it dependency-free.
+Export a pure `resolveEnv(envText, secrets)` that parses `KEY=VALUE` lines (skipping blanks/`#`), replaces a whole-value `$secret:NAME` with `secrets[NAME]` (throwing `Error("Missing secret: NAME")` if absent), and returns the map. Add a CLI wrapper (reads `.env.<mode>` + `.secrets`, applies `resolveEnv`, writes resolved vars to `process.env` / prints export lines) mirroring Libra's interface. Keep it dependency-free.
 
 - [ ] **Step 5: Run the test to verify it passes**
 
@@ -389,9 +389,9 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Consumes: `load-env.mjs`.
 - Produces: a documented secret surface (names only) and per-env files using `$secret:KEY`.
 
-- [ ] **Step 1: Read CandyStore sources**
+- [ ] **Step 1: Read Libra sources**
 
-`Z:\Github\candystore\.secrets.example`, `\.env.dev`, `\.env.ci`, `\.env.prod`, `\scripts\sync-secrets.mjs`.
+`Z:\Github\libra\.secrets.example`, `\.env.dev`, `\.env.ci`, `\.env.prod`, `\scripts\sync-secrets.mjs`.
 
 - [ ] **Step 2: Author `.secrets.example` (placeholders only)**
 
@@ -399,11 +399,11 @@ List every key name Puck needs, each as `KEY=`. Include per-env Supabase keys (`
 
 - [ ] **Step 3: Author `.env.dev/.env.ci/.env.prod`**
 
-Genericize CandyStore's: non-secret config inline; secrets as `$secret:KEY`. Default to `dev/ci/prod`; do not create `.env.staging` (deferred). Point all Supabase references at placeholders, never CandyStore URLs.
+Genericize Libra's: non-secret config inline; secrets as `$secret:KEY`. Default to `dev/ci/prod`; do not create `.env.staging` (deferred). Point all Supabase references at placeholders, never Libra URLs.
 
 - [ ] **Step 4: Port `sync-secrets.mjs`**
 
-Mirror CandyStore's GitHub-secrets→`.secrets` puller, genericized.
+Mirror Libra's GitHub-secrets→`.secrets` puller, genericized.
 
 - [ ] **Step 5: Verify secretlint finds nothing and example has no values**
 
@@ -438,16 +438,16 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Copy the trees**
 
-Copy `Z:\Github\candystore\.claude\{rules,agents,commands,skills,docs}` and `settings.json` and `skills-lock.json` into Puck. (Do **not** copy `settings.local.json`.)
+Copy `Z:\Github\libra\.claude\{rules,agents,commands,skills,docs}` and `settings.json` and `skills-lock.json` into Puck. (Do **not** copy `settings.local.json`.)
 
 - [ ] **Step 2: Apply the genericization transform across the trees**
 
-Replace `candyshop`/`candystore`/`@monorepo` per Global Constraints. Re-ground Puck-specific docs: `.claude/docs/architecture/{overview,layers}.md` describe Puck (hexagonal backend + Next web app + worker + Telegram bot; events→sessions→occurrences). Update `rules/telegram-notifications.md` to Puck's own bot and `rules/supabase-wipe.md` to Puck's project. Keep the one intentional phrase "CandyStore-style permission system" where it documents the RBAC lineage.
+Replace `libra`/`libra`/`@monorepo` per Global Constraints. Re-ground Puck-specific docs: `.claude/docs/architecture/{overview,layers}.md` describe Puck (hexagonal backend + Next web app + worker + Telegram bot; events→sessions→occurrences). Update `rules/telegram-notifications.md` to Puck's own bot and `rules/supabase-wipe.md` to Puck's project. Keep the one intentional phrase "Libra-style permission system" where it documents the RBAC lineage.
 
 - [ ] **Step 3: Verify no stray source references remain**
 
-Run: `grep -rniE "candyshop|@monorepo" .claude || echo "clean"`
-Expected: `clean` (or only intentional "CandyStore-style" matches from `grep -ri candystore`).
+Run: `grep -rniE "libra|@monorepo" .claude || echo "clean"`
+Expected: `clean` (or only intentional "Libra-style" matches from `grep -ri libra`).
 Run: `pnpm exec cspell ".claude/**/*.md" --no-progress`
 Expected: PASS (add new words to `cspell.json` if needed).
 
@@ -474,7 +474,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Copy wrappers**
 
-Copy `Z:\Github\candystore\.claude\tools\*.mjs` and `README.md`. Create `.env.local.example` listing the token names (`GITHUB_PERSONAL_ACCESS_TOKEN`, `LINEAR_API_KEY`, `VERCEL_TOKEN`, `LOGROCKET_API_KEY`, `SLACK_*`) with empty values.
+Copy `Z:\Github\libra\.claude\tools\*.mjs` and `README.md`. Create `.env.local.example` listing the token names (`GITHUB_PERSONAL_ACCESS_TOKEN`, `LINEAR_API_KEY`, `VERCEL_TOKEN`, `LOGROCKET_API_KEY`, `SLACK_*`) with empty values.
 
 - [ ] **Step 2: Author `.mcp.json`**
 
@@ -498,13 +498,13 @@ Copy `Z:\Github\candystore\.claude\tools\*.mjs` and `README.md`. Create `.env.lo
 }
 ```
 
-(Match CandyStore's exact wrapper filenames; flip `"disabled"` → a real entry when Puck has the account.)
+(Match Libra's exact wrapper filenames; flip `"disabled"` → a real entry when Puck has the account.)
 
 - [ ] **Step 3: Verify**
 
 Run: `node -e "JSON.parse(require('fs').readFileSync('.mcp.json','utf8')); console.log('ok')"`
 Expected: `ok`.
-Run: `grep -rniE "candyshop|@monorepo" .claude/tools || echo clean`
+Run: `grep -rniE "libra|@monorepo" .claude/tools || echo clean`
 Expected: `clean`.
 
 - [ ] **Step 4: Commit**
@@ -533,9 +533,9 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Consumes: lint/test scripts.
 - Produces: CI that runs format/lint/typecheck/test + PR validation, green on the empty repo.
 
-- [ ] **Step 1: Read CandyStore workflows + scripts**
+- [ ] **Step 1: Read Libra workflows + scripts**
 
-`Z:\Github\candystore\.github\workflows\{ci,pr-checks,pr-freshness,release,notify-bug-issue}.yml`, `\scripts\detect-changes.sh`, `\scripts\select-workspaces.sh`, `\.github\CODEOWNERS`, templates.
+`Z:\Github\libra\.github\workflows\{ci,pr-checks,pr-freshness,release,notify-bug-issue}.yml`, `\scripts\detect-changes.sh`, `\scripts\select-workspaces.sh`, `\.github\CODEOWNERS`, templates.
 
 - [ ] **Step 2: Port `ci.yml` (genericized, runnable now)**
 
@@ -574,9 +574,9 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 - Produces: parameterized deploy/maintenance workflows, clearly marked inactive until a deploy target is chosen.
 
-- [ ] **Step 1: Read CandyStore deploy workflows**
+- [ ] **Step 1: Read Libra deploy workflows**
 
-`Z:\Github\candystore\.github\workflows\{deploy-gcp,deploy-local,sandbox-release,backup-scheduled,sync-secrets}.yml`.
+`Z:\Github\libra\.github\workflows\{deploy-gcp,deploy-local,sandbox-release,backup-scheduled,sync-secrets}.yml`.
 
 - [ ] **Step 2: Port as templates**
 
@@ -614,9 +614,9 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 - Produces: Docker/Supabase templates adapted for Node services + a Next app; nothing runs until apps exist.
 
-- [ ] **Step 1: Read CandyStore docker + supabase + scripts**
+- [ ] **Step 1: Read Libra docker + supabase + scripts**
 
-`Z:\Github\candystore\docker\**`, `\supabase\config.toml.template`, `\scripts\{docker-build,docker-teardown,supabase-cmd,supabase-docker}.mjs`, `\scripts\docker-health-check.sh`.
+`Z:\Github\libra\docker\**`, `\supabase\config.toml.template`, `\scripts\{docker-build,docker-teardown,supabase-cmd,supabase-docker}.mjs`, `\scripts\docker-health-check.sh`.
 
 - [ ] **Step 2: Port templates, adapt runtime shape**
 
@@ -634,7 +634,7 @@ Port `config.toml.template` (placeholders for project id/ports; expose `public`,
 
 Run: `node -e "console.log('scripts parse')" && for f in scripts/*.mjs; do node --check "$f"; done` (bash) — or PowerShell loop.
 Expected: every `.mjs` passes `node --check`.
-Run: `grep -rniE "candyshop|@monorepo" docker scripts supabase || echo clean`
+Run: `grep -rniE "libra|@monorepo" docker scripts supabase || echo clean`
 Expected: `clean`.
 
 - [ ] **Step 6: Commit**
@@ -661,9 +661,9 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 - Produces: the remaining meta files and a verified, green boilerplate.
 
-- [ ] **Step 1: Read CandyStore sources**
+- [ ] **Step 1: Read Libra sources**
 
-`Z:\Github\candystore\orval.config.ts`, `\vitest.aliases.ts`, `\vitest.config.scripts.js`.
+`Z:\Github\libra\orval.config.ts`, `\vitest.aliases.ts`, `\vitest.config.scripts.js`.
 
 - [ ] **Step 2: Port codegen + vitest base as templates**
 
@@ -671,7 +671,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 - [ ] **Step 3: Update `README.md` / `CLAUDE.md`**
 
-Add a short "Repo boilerplate" note to `README.md` (the rails are in place; `.secrets`/env resolver; `.claude` assistant layer) and a `CLAUDE.md` line pointing at this plan + the boilerplate spec. Keep the CandyStore-production safety warning verbatim.
+Add a short "Repo boilerplate" note to `README.md` (the rails are in place; `.secrets`/env resolver; `.claude` assistant layer) and a `CLAUDE.md` line pointing at this plan + the boilerplate spec. Keep the Libra-production safety warning verbatim.
 
 - [ ] **Step 4: Full definition-of-done verification**
 
@@ -685,7 +685,7 @@ Run each and confirm:
 - `pnpm test` (or `pnpm exec vitest run`) → resolver tests PASS, no workspace tests.
 - `pnpm exec secretlint "**/*"` → no findings.
 - Workflows parse (Task 9 Step 5 check) → ok.
-- `grep -rniE "candyshop|@monorepo" . --exclude-dir=node_modules --exclude-dir=.git || echo clean` → `clean`.
+- `grep -rniE "libra|@monorepo" . --exclude-dir=node_modules --exclude-dir=.git || echo clean` → `clean`.
 
 - [ ] **Step 5: Commit**
 
@@ -706,4 +706,4 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 **Type consistency:** The only authored interface is `resolveEnv(envText, secrets)` (Task 5), used consistently in its own test; the CLI wrapper consumes it. No cross-task signature drift.
 
-**Port-fidelity note:** Tasks that copy CandyStore files specify the exact source path + transform + a `grep` verification that no source identifiers leak — the authoritative content is the named source file, which is the correct specification for a port.
+**Port-fidelity note:** Tasks that copy Libra files specify the exact source path + transform + a `grep` verification that no source identifiers leak — the authoritative content is the named source file, which is the correct specification for a port.

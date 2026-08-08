@@ -16,21 +16,21 @@
 
 **Goal:** Stand up `apps/web` — a Next.js authoring app where an organizer logs in with Google/Discord, lands in a protected responsive shell, and views/edits their profile (`user_profiles`) under RLS — proving the whole stack (auth → Supabase → RLS → design system → tests) end-to-end.
 
-**Architecture:** Next.js 16 App Router app talking **directly to Supabase** (the foundation's RLS + RPCs; no orval/REST). Mirrors CandyStore's `apps/auth` patterns, but **app-local** (Puck has one web app, so Supabase clients/i18n/tid live in `apps/web/src/shared/` rather than a shared package) and **middleware-level** route protection. Clean-architecture feature layout per `.claude/rules/architecture.md`.
+**Architecture:** Next.js 16 App Router app talking **directly to Supabase** (the foundation's RLS + RPCs; no orval/REST). Mirrors Libra's `apps/auth` patterns, but **app-local** (Puck has one web app, so Supabase clients/i18n/tid live in `apps/web/src/shared/` rather than a shared package) and **middleware-level** route protection. Clean-architecture feature layout per `.claude/rules/architecture.md`.
 
 **Tech Stack:** Next.js 16, React 19, Tailwind v4 + `@puck/ui` (shadcn), `next-intl` (en/es, `[locale]`-prefixed), `@supabase/ssr`, TanStack Query, zod + react-hook-form, Vitest + RTL, Playwright. Consumes `@puck/db` (types) + `@puck/auth` (catalog/helper).
 
 ## Global Constraints
 
 - **Spec:** `docs/superpowers/specs/2026-06-30-puck-web-shell-auth-design.md` — every task's requirements implicitly include it.
-- **Reference project:** adapt from CandyStore at `Z:\Github\candystore` (esp. `apps/auth` + `packages/{api,ui,shared}`). Read the cited file before adapting. Never copy CandyStore branding/keys/business code.
-- **Direct Supabase only.** No orval, no REST client, no Server Actions for data (CandyStore mutates via TanStack Query → browser client → RLS). Service-role key is **never** imported into `apps/web` runtime code (E2E fixtures only).
+- **Reference project:** adapt from Libra at `Z:\Github\libra` (esp. `apps/auth` + `packages/{api,ui,shared}`). Read the cited file before adapting. Never copy Libra branding/keys/business code.
+- **Direct Supabase only.** No orval, no REST client, no Server Actions for data (Libra mutates via TanStack Query → browser client → RLS). Service-role key is **never** imported into `apps/web` runtime code (E2E fixtures only).
 - **PII rule (from foundation `0013`):** `user_profiles` SELECT is column-scoped — an authenticated user **cannot** read `email`/`provider`. Profile reads select **only** `id, display_name, avatar_url, first_seen_at, last_seen_at, created_at, updated_at`. **Email is read from the auth session** (`getUser().email`), never from the table.
 - **Editable profile fields:** `display_name`, `avatar_url` only.
 - **Filenames:** kebab-case (components PascalCase per `naming-conventions.md`). ESM. Intra-app imports use `@/` → `src/`; workspace packages use bare scope `@puck/db`, `@puck/auth`, `@puck/ui`.
 - **i18n:** `next-intl`, locales **en + es**, `[locale]`-prefixed routes. **No hardcoded user-facing strings** — every key exists in both `en.json` and `es.json` (`single-source-of-truth.md`).
-- **Design tokens:** author from `docs/design/README.md` as OKLCH CSS variables (`tailwind.md`). Reuse Puck's iris brand — do NOT copy CandyStore's palette.
-- **Tests:** TDD (failing test first). Supabase mocked at the client boundary via `vi.mock` (CandyStore pattern); MSW is available for any raw HTTP. E2E never clicks real OAuth — it seeds sessions. Selectors via `tid()`; no `toContainText`/`toHaveText` on translated copy (`e2e-selectors.md`).
+- **Design tokens:** author from `docs/design/README.md` as OKLCH CSS variables (`tailwind.md`). Reuse Puck's iris brand — do NOT copy Libra's palette.
+- **Tests:** TDD (failing test first). Supabase mocked at the client boundary via `vi.mock` (Libra pattern); MSW is available for any raw HTTP. E2E never clicks real OAuth — it seeds sessions. Selectors via `tid()`; no `toContainText`/`toHaveText` on translated copy (`e2e-selectors.md`).
 - **Package manager:** pnpm 10, Node 24. New workspace deps via `pnpm --filter @puck/web add …` / `pnpm add -w …`.
 - **DoD per the spec §3:** `pnpm typecheck` / `lint` / `format:check` / `test` (unit) + slice-1 Playwright E2E all green; new env vars in `.env.example` + README.
 
@@ -96,7 +96,7 @@ apps/web/                            # NEW — @puck/web
 
 - [x] **Step 1: Create the package + install deps**
 
-`apps/web/package.json` (adapt versions from `candystore/apps/auth/package.json` — Next 16.2.x, React 19.2.x):
+`apps/web/package.json` (adapt versions from `libra/apps/auth/package.json` — Next 16.2.x, React 19.2.x):
 
 ```json
 {
@@ -129,7 +129,7 @@ Expected: installs; `@puck/ui` will not resolve until Task 2 creates it — that
 
 - [x] **Step 2: tsconfig + next.config + postcss**
 
-`apps/web/tsconfig.json` (extend base; aliases mirror `candystore/apps/auth/tsconfig.json`):
+`apps/web/tsconfig.json` (extend base; aliases mirror `libra/apps/auth/tsconfig.json`):
 
 ```json
 {
@@ -153,7 +153,7 @@ Expected: installs; `@puck/ui` will not resolve until Task 2 creates it — that
 }
 ```
 
-`apps/web/next.config.ts` (adapt from `candystore/apps/auth/next.config.ts`, dropping Sentry/standalone/rewrites for now):
+`apps/web/next.config.ts` (adapt from `libra/apps/auth/next.config.ts`, dropping Sentry/standalone/rewrites for now):
 
 ```ts
 import type { NextConfig } from "next";
@@ -239,7 +239,7 @@ export default function HomePage() {
 
 - [x] **Step 4: tid() util + test harness**
 
-`apps/web/src/shared/infrastructure/config/tid.ts` (simplified from `candystore/packages/shared/src/utils/tid.ts`):
+`apps/web/src/shared/infrastructure/config/tid.ts` (simplified from `libra/packages/shared/src/utils/tid.ts`):
 
 ```ts
 export function tid(id: string): Record<string, string> {
@@ -253,7 +253,7 @@ export function tid(id: string): Record<string, string> {
 }
 ```
 
-`apps/web/vitest.config.mts` (adapt from `candystore/apps/auth/vitest.config.mts`):
+`apps/web/vitest.config.mts` (adapt from `libra/apps/auth/vitest.config.mts`):
 
 ```ts
 import { defineConfig } from "vitest/config";
@@ -481,7 +481,7 @@ describe("Button", () => {
 });
 ```
 
-Run → RED. Then `packages/ui/src/components/button.tsx` (CVA, adapt from `candystore/packages/ui/src/components/button.tsx` but with Puck variants):
+Run → RED. Then `packages/ui/src/components/button.tsx` (CVA, adapt from `libra/packages/ui/src/components/button.tsx` but with Puck variants):
 
 ```tsx
 import { Slot } from "@radix-ui/react-slot";
@@ -582,7 +582,7 @@ describe("deriveProjectRef", () => {
 });
 ```
 
-Run → RED. Then `apps/web/src/shared/infrastructure/supabase/config.ts` (adapt `candystore/packages/api/src/supabase/config.ts`):
+Run → RED. Then `apps/web/src/shared/infrastructure/supabase/config.ts` (adapt `libra/packages/api/src/supabase/config.ts`):
 
 ```ts
 import { env } from "@/shared/infrastructure/config/env";
@@ -596,7 +596,7 @@ export const SUPABASE_COOKIE_KEY = `sb-${deriveProjectRef(SUPABASE_URL)}-auth-to
 
 Run → GREEN.
 
-- [x] **Step 2: cookies + clients (adapt CandyStore, drop multi-app domain)**
+- [x] **Step 2: cookies + clients (adapt Libra, drop multi-app domain)**
 
 `apps/web/src/shared/infrastructure/supabase/cookies.ts` — localhost-friendly merge (no shared root domain; `secure` only in prod):
 
@@ -609,7 +609,7 @@ export function mergeSupabaseCookieOptions(
 }
 ```
 
-`apps/web/src/shared/infrastructure/supabase/browser-client.ts` (singleton, adapt `candystore/packages/api/src/supabase/browser.ts`):
+`apps/web/src/shared/infrastructure/supabase/browser-client.ts` (singleton, adapt `libra/packages/api/src/supabase/browser.ts`):
 
 ```ts
 import { createBrowserClient } from "@supabase/ssr";
@@ -626,7 +626,7 @@ export function createBrowserSupabaseClient() {
 }
 ```
 
-`apps/web/src/shared/infrastructure/supabase/server-client.ts` (adapt `candystore/packages/api/src/supabase/server.ts`):
+`apps/web/src/shared/infrastructure/supabase/server-client.ts` (adapt `libra/packages/api/src/supabase/server.ts`):
 
 ```ts
 import { createServerClient } from "@supabase/ssr";
@@ -795,7 +795,7 @@ export function useSupabase() {
 }
 ```
 
-`useAuth.ts` (adapt `candystore/packages/auth/src/client/useAuth.ts`):
+`useAuth.ts` (adapt `libra/packages/auth/src/client/useAuth.ts`):
 
 ```ts
 "use client";
@@ -864,7 +864,7 @@ describe("SocialLoginButtons", () => {
 Run → RED.
 
 - [x] **Step 3: Implement + login page**
-      `SocialLoginButtons.tsx` (adapt `candystore/.../SocialLoginButtons.tsx`):
+      `SocialLoginButtons.tsx` (adapt `libra/.../SocialLoginButtons.tsx`):
 
 ```tsx
 "use client";
@@ -969,7 +969,7 @@ describe("oauth callback", () => {
 
 Run → RED.
 
-- [x] **Step 2: Implement (adapt `candystore/packages/api/src/supabase/callback.ts`, simplified)**
+- [x] **Step 2: Implement (adapt `libra/packages/api/src/supabase/callback.ts`, simplified)**
 
 ```ts
 import { NextResponse, type NextRequest } from "next/server";
@@ -1048,7 +1048,7 @@ export function needsAuthRedirect(
 }
 ```
 
-`apps/web/middleware.ts` (compose session refresh + intl; adapt the `updateSession` shape from `candystore/packages/api/src/supabase/proxy.ts`, and next-intl middleware):
+`apps/web/middleware.ts` (compose session refresh + intl; adapt the `updateSession` shape from `libra/packages/api/src/supabase/proxy.ts`, and next-intl middleware):
 
 ```ts
 import { type NextRequest, NextResponse } from "next/server";
@@ -1266,7 +1266,7 @@ describe("fetchProfile", () => {
 
 Run → RED.
 
-- [x] **Step 3: Implement (adapt `candystore/.../account/infrastructure/profileQueries.ts`, but column-scoped — never `select("*")`)** _(GREEN — 10/10 tests pass, `pnpm --filter @puck/web typecheck` clean)_
+- [x] **Step 3: Implement (adapt `libra/.../account/infrastructure/profileQueries.ts`, but column-scoped — never `select("*")`)** _(GREEN — 10/10 tests pass, `pnpm --filter @puck/web typecheck` clean)_
       `infrastructure/profile-queries.ts`:
 
 ```ts
@@ -1366,7 +1366,7 @@ describe("useProfile", () => {
 
 Run → RED.
 
-- [x] **Step 2: Implement (adapt CandyStore hooks)** _(GREEN — 13/13 account tests, typecheck clean)_
+- [x] **Step 2: Implement (adapt Libra hooks)** _(GREEN — 13/13 account tests, typecheck clean)_
       `useProfile.ts`:
 
 ```ts
@@ -1465,8 +1465,8 @@ describe("ProfileForm", () => {
 Run → RED.
 
 - [x] **Step 2: Implement ProfileForm, AccountPage, SignOutButton, route** _(GREEN — 29/29 web tests, typecheck + lint + prettier clean. Note: `ProfileForm` wraps `handleSubmit((v) => onSubmit(v))` so RHF's event never leaks into `mutate`'s options.)_
-      **Deferred redirect resolved (Option A — keep middleware):** home `[locale]/page.tsx` now `redirect({ href: "/account", locale })` via next-intl (server component), as the interim landing until the events-dashboard slice replaces it (mirrors CandyStore admin's Dashboard-at-root). Its smoke test was rewritten from `tid("home")` to assert the redirect. Puck's merged middleware protection is retained — CandyStore's no-middleware layout-guard was considered and declined to avoid re-architecting merged tasks 5–8.
-      `ProfileForm.tsx` (react-hook-form + zodResolver; `z.input`→`z.output` generics like CandyStore; `@puck/ui` `Input`/`Label`/`Button`; `{...tid("profile-display-name")}`, `{...tid("profile-save")}`; uses `useTranslations("account")`).
+      **Deferred redirect resolved (Option A — keep middleware):** home `[locale]/page.tsx` now `redirect({ href: "/account", locale })` via next-intl (server component), as the interim landing until the events-dashboard slice replaces it (mirrors Libra admin's Dashboard-at-root). Its smoke test was rewritten from `tid("home")` to assert the redirect. Puck's merged middleware protection is retained — Libra's no-middleware layout-guard was considered and declined to avoid re-architecting merged tasks 5–8.
+      `ProfileForm.tsx` (react-hook-form + zodResolver; `z.input`→`z.output` generics like Libra; `@puck/ui` `Input`/`Label`/`Button`; `{...tid("profile-display-name")}`, `{...tid("profile-save")}`; uses `useTranslations("account")`).
       `AccountPage.tsx` (`"use client"`):
 
 ```tsx
@@ -1544,14 +1544,14 @@ git add apps/web && git commit -m "feat(web): account page (session email + prof
 >
 > 1. **Middleware never ran.** It lived at `apps/web/middleware.ts`, but the app is under `src/`, so Next ignored it — `/account` was fully unprotected. Next 16 also renamed the convention `middleware`→`proxy`, so it's now `apps/web/src/proxy.ts` exporting `proxy`.
 > 2. **`export const config = { matcher }` broke `next build`** ("Invalid segment configuration export") AND caused next-intl to run on `/_next/*` requests → assets 404'd at `/en/_next/*` → **no client JS → no hydration → the account form never loaded**. Fixed by dropping the `config` export and filtering excluded paths inside `proxy()`.
-> 3. **Bare `/` returned 404** — added `app/page.tsx` → `/{defaultLocale}` (CandyStore-style, TDD'd).
+> 3. **Bare `/` returned 404** — added `app/page.tsx` → `/{defaultLocale}` (Libra-style, TDD'd).
 > 4. **No `<title>`** (WCAG 2.4.2 a11y fail) — added i18n `generateMetadata` (`meta` namespace, en/es).
 > 5. **eslint `boundaries` config** registered `proxy.ts` without `mode: "file"`, so it flagged the file — fixed in `eslint.config.mjs`.
 
-- [x] **Step 1: Playwright config + session helper (adapt `candystore/apps/auth/e2e/**`)** _(single chromium project, `webServer: pnpm dev`, health check on `/en/login`; simplified session helper — localhost `url`-scoped cookie, `deriveProjectRef`mirror, no custom token cookie)_`playwright.config.ts`: single `chromium`project,`baseURL`from env (default`http://localhost:5000`), `workers: 1`, `retries: process.env.CI ? 2 : 0`, a `webServer`running`pnpm --filter @puck/web dev`(or assume an already-running app + local Supabase, matching CandyStore's external-stack model — pick one and document it).`e2e/helpers/session.ts`— adapt`candystore/apps/auth/e2e/helpers/session.ts`, **simplified for Puck**: derive `sb-<ref>-auth-token`from`NEXT_PUBLIC_SUPABASE_URL`, base64-encode the session payload as `@supabase/ssr`does, set the cookie on`localhost`only (no shared root domain), including the`.0`chunk. No custom`auth_access_token` cookie.
+- [x] **Step 1: Playwright config + session helper (adapt `libra/apps/auth/e2e/**`)** _(single chromium project, `webServer: pnpm dev`, health check on `/en/login`; simplified session helper — localhost `url`-scoped cookie, `deriveProjectRef`mirror, no custom token cookie)_`playwright.config.ts`: single `chromium`project,`baseURL`from env (default`http://localhost:5000`), `workers: 1`, `retries: process.env.CI ? 2 : 0`, a `webServer`running`pnpm --filter @puck/web dev`(or assume an already-running app + local Supabase, matching Libra's external-stack model — pick one and document it).`e2e/helpers/session.ts`— adapt`libra/apps/auth/e2e/helpers/session.ts`, **simplified for Puck**: derive `sb-<ref>-auth-token`from`NEXT_PUBLIC_SUPABASE_URL`, base64-encode the session payload as `@supabase/ssr`does, set the cookie on`localhost`only (no shared root domain), including the`.0`chunk. No custom`auth_access_token` cookie.
 
 - [x] **Step 2: Auth fixture (admin createUser + sign-in + inject)** _(`authenticatedPage` fixture; auto-created `user_profiles` via foundation triggers; deletes the user on teardown)_
-      `e2e/fixtures/auth.fixture.ts` — adapt CandyStore's fixture: `supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, …)`; `createUser({ email_confirm: true })`; `signInWithPassword` to get tokens; `injectSession(context, …)`; cleanup deletes the user. (The foundation triggers auto-create the `user_profiles` row + consumer permissions on `createUser` — no manual profile seeding needed.)
+      `e2e/fixtures/auth.fixture.ts` — adapt Libra's fixture: `supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, …)`; `createUser({ email_confirm: true })`; `signInWithPassword` to get tokens; `injectSession(context, …)`; cleanup deletes the user. (The foundation triggers auto-create the `user_profiles` row + consumer permissions on `createUser` — no manual profile seeding needed.)
 
 - [x] **Step 3: Tests** _(auth-redirect + login a11y; seeded-session account edit that reloads to prove DB persistence + account a11y — 4/4 green via axe)_
       `auth-redirect.spec.ts` (no fixture — unauthenticated):
@@ -1640,7 +1640,7 @@ git commit -m "docs(web): env surface + README run/test + apps/web getting-start
 | §8 testing (unit/vi.mock, E2E seeded session, a11y)                                   | every task; 12                                    |
 | §9 GitHub-tasks flow                                                                  | branch `feat/GH-5_…`; PR `Closes #5` at execution |
 
-**2. Placeholder scan:** No "TBD"/"implement later". The few "adapt from CandyStore `<path>`" pointers each name an EXACT real file + the explicit Puck deltas (column-scoping, app-local, no multi-app domain) — these are concrete adaptation instructions, not placeholders. Design-token authoring (Task 2) lists the exact token set + WCAG check.
+**2. Placeholder scan:** No "TBD"/"implement later". The few "adapt from Libra `<path>`" pointers each name an EXACT real file + the explicit Puck deltas (column-scoping, app-local, no multi-app domain) — these are concrete adaptation instructions, not placeholders. Design-token authoring (Task 2) lists the exact token set + WCAG check.
 
 **3. Type consistency:** `Profile` (Task 9) is used identically in Tasks 10–11; `ProfileFormValues`/`ProfileFormInput` (Task 9 schema) flow into the form (Task 11); `fetchProfile`/`updateProfile` signatures match their consumers; `useProfile`/`useUpdateProfile` names are stable; `PROFILE_QUERY_KEY`/`PROFILE_COLUMNS` are defined once and reused. `createBrowserSupabaseClient`/`createServerSupabaseClient` names are consistent across Tasks 3/5/6/7.
 

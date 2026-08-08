@@ -63,7 +63,7 @@ Event (umbrella — multi-day festival/conference)
 - **Event subscription** → daily digest (one notification per day listing that day's sessions)
 - **Session subscription** → per-occurrence reminders at configurable lead times: T-30, T-15, T-10, T-5, and at start
 
-**Permissions** use a **CandyStore-style permission system**: each event has one owner plus optional delegates. Authoring operations are guarded by Supabase RLS using this owner/delegate model.
+**Permissions** use a **Libra-style permission system**: each event has one owner plus optional delegates. Authoring operations are guarded by Supabase RLS using this owner/delegate model.
 
 ### 3. Application Topology
 

@@ -68,10 +68,10 @@ the test harness (Vitest + RTL + MSW unit tests, Playwright E2E, axe a11y).
 ## 4. Architecture
 
 Follows `.claude/rules/architecture.md` + `monorepo-architecture.md`. This **is the
-CandyStore monorepo pattern** — same pnpm `apps/*` + `packages/*` layout, the same
+Libra monorepo pattern** — same pnpm `apps/*` + `packages/*` layout, the same
 clean-architecture feature/layer structure (`features/[feature]/{domain,application,infrastructure,presentation}`),
-and the same `packages/ui` / `packages/auth` split. Slice 1 mirrors CandyStore's own
-Supabase-backed account feature (e.g. CandyStore `apps/auth/src/features/account/infrastructure/profileQueries.ts`).
+and the same `packages/ui` / `packages/auth` split. Slice 1 mirrors Libra's own
+Supabase-backed account feature (e.g. Libra `apps/auth/src/features/account/infrastructure/profileQueries.ts`).
 
 ```
 apps/web/src/
@@ -97,7 +97,7 @@ apps/web/src/
 └── mocks/                 # MSW handlers + server (tests)
 ```
 
-**Stack (mirror CandyStore/Janus; deviations noted):** Next.js 16 App Router,
+**Stack (mirror Libra/Janus; deviations noted):** Next.js 16 App Router,
 Tailwind v4 + shadcn/ui (`packages/ui`), `next-intl` (locales **en + es**),
 `@supabase/ssr`, TanStack Query, Vitest + RTL + MSW + Playwright. Consumes
 `@puck/db` (types) and `@puck/auth` (`matchesPermissions`, 28-key catalog).
@@ -106,7 +106,7 @@ Tailwind v4 + shadcn/ui (`packages/ui`), `next-intl` (locales **en + es**),
 a REST-API project) assumes an orval-generated API client in the infrastructure
 layer. Puck #2 talks **directly to Supabase**, so feature `infrastructure/` wraps
 Supabase queries typed by `@puck/db` (TanStack Query for client cache) — **not
-orval**. This matches how CandyStore implements its own Supabase features. Orval
+orval**. This matches how Libra implements its own Supabase features. Orval
 (`orval.config.ts`, already templated) stays unused until #3's Fastify API.
 
 **Data access:** reads via Server Components / the server Supabase client where
@@ -171,7 +171,7 @@ reads/edits **`display_name` + `avatar_url` from `user_profiles`** (RLS
   `id, display_name, avatar_url` for `auth.uid()`), `updateProfile(patch)` (update
   the two editable columns; RLS enforces own-row). Typed by `@puck/db`.
 - **`application/`** — `useProfile()` / `useUpdateProfile()` **client-side TanStack
-  Query hooks** (browser client), mirroring CandyStore's account feature. (§4's
+  Query hooks** (browser client), mirroring Libra's account feature. (§4's
   general principle prefers RSC reads where they help, but slice 1's account is small
   and interactive, so it uses client hooks throughout — this is the authoritative
   choice for the account feature.)
@@ -236,7 +236,7 @@ on the slice-1 branch (develop is protected — no direct commits).
 
 ## 11. Resolved decisions
 
-- **Locales:** ship **en + es** from slice 1 (mirrors CandyStore; i18n infra makes
+- **Locales:** ship **en + es** from slice 1 (mirrors Libra; i18n infra makes
   adding more cheap).
 - **Data access:** direct Supabase (no orval) — §4.
 - **Email source:** auth session, not `user_profiles` — §6.

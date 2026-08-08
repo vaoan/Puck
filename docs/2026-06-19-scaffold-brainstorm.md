@@ -74,7 +74,7 @@ Legend: 🔴 blocks MVP · 🟡 important soon · 🟢 later/nice-to-have
   process env / `.env`. Decide whether to port a `load-env` step or use plain
   container env vars (cheaper, simpler).
 - 🟡 **Production-DB guardrail.** Optional: refuse to boot if `SUPABASE_URL`
-  matches a blocklist (protects against accidentally pointing at CandyStore).
+  matches a blocklist (protects against accidentally pointing at Libra).
 - 🟢 **PII handling policy** (retention, deletion on unfollow/account delete).
 
 ## 5. Ops / deployment / cost
@@ -83,7 +83,7 @@ Legend: 🔴 blocks MVP · 🟡 important soon · 🟢 later/nice-to-have
   `--frozen-lockfile` will fail until the lockfile exists. Do this first thing
   in the Puck folder.
 - 🟡 **Dockerfile(s) + compose** for `api` and `worker`, and a supervisord entry
-  to co-locate them on the existing CandyStore host (zero new infra).
+  to co-locate them on the existing Libra host (zero new infra).
 - 🟡 **Migration deploy.** A workflow/step running `supabase db push` against
   Puck's project on release.
 - 🟡 **Env matrix.** Only `.env.example` exists. Add `.env.dev/.staging/.prod`

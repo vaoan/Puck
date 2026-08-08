@@ -61,7 +61,7 @@ Puck watches the clock and fans the reminders out.
 | **Session owner / delegate** | Edit their session and upload documents to it anytime                             |
 | **Anyone**                   | Create their own session inside an event; discover events and subscribe           |
 
-Authoring is governed by a CandyStore-style permission system — owners and
+Authoring is governed by a Libra-style permission system — owners and
 delegates, enforced in the database with row-level security — not a single
 all-powerful admin.
 
@@ -70,12 +70,12 @@ all-powerful admin.
 Puck is one platform decomposed into four sub-projects, each with its own
 spec → plan → build cycle. They ship in dependency order.
 
-| #      | Sub-project           | What it delivers                                                                               | Status         |
-| ------ | --------------------- | ---------------------------------------------------------------------------------------------- | -------------- |
-| **01** | **Foundation**        | Identity, the CandyStore-style RBAC, and the event → session → occurrence domain (RLS + audit) | ✅ complete    |
-| **02** | **Authoring web app** | Next.js admin: build the schedule, manage delegates, upload documents, moderate                | 🔨 in progress |
-| **03** | **Reminder engine**   | Two-level subscriptions, `pgmq` + `pg_cron` scheduling, fan-out, dedupe, delivery              | 💭 idea        |
-| **04** | **Telegram bot**      | Discover events, browse the schedule, subscribe, set lead times, link your account             | 💭 idea        |
+| #      | Sub-project           | What it delivers                                                                          | Status         |
+| ------ | --------------------- | ----------------------------------------------------------------------------------------- | -------------- |
+| **01** | **Foundation**        | Identity, the Libra-style RBAC, and the event → session → occurrence domain (RLS + audit) | ✅ complete    |
+| **02** | **Authoring web app** | Next.js admin: build the schedule, manage delegates, upload documents, moderate           | 🔨 in progress |
+| **03** | **Reminder engine**   | Two-level subscriptions, `pgmq` + `pg_cron` scheduling, fan-out, dedupe, delivery         | 💭 idea        |
+| **04** | **Telegram bot**      | Discover events, browse the schedule, subscribe, set lead times, link your account        | 💭 idea        |
 
 > **Status: in development.** The **Foundation (01)** is built — 12 Supabase
 > migrations (identity, RBAC, event → session → occurrence domain, RLS, audit)
@@ -119,7 +119,7 @@ the `apps/web` scaffold are in place, so the scripts above now run against real
 workspaces.
 
 > ⚠️ **Puck uses its own Supabase project.** Never point `SUPABASE_URL` /
-> `SUPABASE_SERVICE_ROLE_KEY` at CandyStore or any shared / production database.
+> `SUPABASE_SERVICE_ROLE_KEY` at Libra or any shared / production database.
 
 ### Running the web app (`apps/web`)
 
@@ -159,7 +159,7 @@ The dev-backbone rails are already in place:
 
 <br>
 
-Puck shares its toolchain DNA with **CandyStore** and **Janus** — the same pnpm +
+Puck shares its toolchain DNA with **Libra** and **Janus** — the same pnpm +
 Turbo monorepo, strict TypeScript, ESLint flat config + Prettier, Vitest, Husky,
 secretlint/cspell, the `.env` + `.secrets` discipline, kebab-case filenames, and
 Supabase (Auth + RLS + Storage). Like them, Puck has a Next.js web app

@@ -6,9 +6,9 @@
 
 ## Safety Warning
 
-> **Puck has its own Supabase project — separate from CandyStore's production DB.**
-> Never use CandyStore credentials in Puck's `.env`/`.secrets`, and never point
-> `SUPABASE_URL` at CandyStore's project. CandyStore is in production — never
+> **Puck has its own Supabase project — separate from Libra's production DB.**
+> Never use Libra credentials in Puck's `.env`/`.secrets`, and never point
+> `SUPABASE_URL` at Libra's project. Libra is in production — never
 > run anything against its database.
 
 ---
